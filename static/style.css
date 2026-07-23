@@ -1,0 +1,401 @@
+/* 閳光偓閳光偓 Reset & base 閳光偓閳光偓 */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100vw; height: 100vh; overflow: hidden; touch-action: manipulation; }
+
+body {
+  background: #0d1117;
+  color: #e6edf3;
+  font-family: -apple-system, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 閳光偓閳光偓 Top bar 閳光偓閳光偓 */
+#topbar {
+  height: 46px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+#tb-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #4ade80;
+  letter-spacing: 0.5px;
+}
+#tb-right { display: flex; gap: 10px; align-items: center; }
+.tb-chip {
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: #8b949e;
+  line-height: 1.4;
+}
+.tb-btn {
+  cursor: pointer;
+  color: #4ade80;
+  transition: background 0.15s;
+}
+.tb-btn:active { background: #30363d; }
+
+/* 閳光偓閳光偓 Pages 閳光偓閳光偓 */
+#pages {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.page {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 16px;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+.page.active { display: flex; }
+
+/* 閳光偓閳光偓 Bottom nav 閳光偓閳光偓 */
+#bottomnav {
+  height: 58px;
+  background: #161b22;
+  border-top: 1px solid #30363d;
+  display: flex;
+  flex-shrink: 0;
+}
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: #484f58;
+  cursor: pointer;
+  transition: color 0.15s;
+  font-size: 10px;
+  padding: 6px 0;
+}
+.nav-btn svg { width: 22px; height: 22px; }
+.nav-btn.active { color: #4ade80; }
+.nav-btn:active { color: #86efac; }
+
+/* 閳光偓閳光偓 Cards 閳光偓閳光偓 */
+.card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #8b949e;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.card-header svg { width: 14px; height: 14px; flex-shrink: 0; }
+.card-val {
+  font-size: 28px;
+  font-weight: 700;
+  color: #e6edf3;
+  line-height: 1.1;
+}
+.card-sub {
+  font-size: 12px;
+  color: #6e7681;
+  margin-top: 3px;
+}
+
+/* Dashboard grid */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.dash-grid .card { padding: 12px 14px; }
+.dash-grid .card-val { font-size: 24px; }
+
+/* Status dot */
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.dot-green  { background: #3fb950; box-shadow: 0 0 6px #3fb95066; }
+.dot-yellow { background: #d29922; }
+.dot-red    { background: #f85149; }
+.dot-gray   { background: #484f58; }
+
+/* Progress bar */
+.bar-wrap {
+  background: #21262d;
+  border-radius: 4px;
+  height: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  background: #4ade80;
+}
+.bar-fill.warn  { background: #d29922; }
+.bar-fill.crit  { background: #f85149; }
+
+/* Battery icon row */
+.bat-row { display: flex; align-items: center; gap: 10px; }
+.bat-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* 閳光偓閳光偓 Buttons 閳光偓閳光偓 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+  background: #21262d;
+  color: #e6edf3;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+  min-height: 44px;
+}
+.btn:active { background: #30363d; }
+.btn-primary {
+  background: #15803d;
+  border-color: #22c55e;
+  color: #fff;
+}
+.btn-primary:active { background: #22c55e; }
+.btn-success {
+  background: #1a4d2e;
+  border-color: #3fb950;
+  color: #3fb950;
+}
+.btn-danger {
+  background: #3d1a1a;
+  border-color: #f85149;
+  color: #f85149;
+}
+.btn-danger:active { background: #5a2020; }
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+  min-height: 34px;
+  width: auto;
+}
+.btn:disabled { opacity: 0.4; pointer-events: none; }
+
+/* 閳光偓閳光偓 Page titles 閳光偓閳光偓 */
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e6edf3;
+  margin-bottom: 4px;
+}
+.page-sub {
+  font-size: 13px;
+  color: #6e7681;
+  margin-bottom: 8px;
+}
+
+/* 閳光偓閳光偓 List items 閳光偓閳光偓 */
+.list-item {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.list-item:active { background: #21262d; }
+.list-item-main { flex: 1; min-width: 0; }
+.list-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e6edf3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.list-item-sub {
+  font-size: 12px;
+  color: #6e7681;
+  margin-top: 2px;
+}
+.list-item-right { flex-shrink: 0; color: #6e7681; }
+
+/* Signal bars */
+.sig { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+.sig span {
+  width: 4px;
+  background: #484f58;
+  border-radius: 1px;
+  display: block;
+}
+.sig span:nth-child(1) { height: 4px; }
+.sig span:nth-child(2) { height: 8px; }
+.sig span:nth-child(3) { height: 12px; }
+.sig span:nth-child(4) { height: 16px; }
+.sig.s4 span              { background: #3fb950; }
+.sig.s3 span:nth-child(-n+3) { background: #3fb950; }
+.sig.s2 span:nth-child(-n+2) { background: #d29922; }
+.sig.s1 span:nth-child(-n+1) { background: #f85149; }
+
+/* 閳光偓閳光偓 Modal 閳光偓閳光偓 */
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+#modal-overlay.hidden { display: none; }
+#modal-box {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 16px;
+  padding: 24px 20px 16px;
+  width: 340px;
+  max-width: calc(100vw - 40px);
+}
+#modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #e6edf3;
+}
+#modal-body { margin-bottom: 16px; }
+#modal-actions { display: flex; gap: 10px; }
+
+/* Form inputs */
+.input {
+  width: 100%;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 15px;
+  padding: 10px 12px;
+  outline: none;
+  -webkit-appearance: none;
+}
+.input:focus { border-color: #4ade80; }
+.input-label {
+  font-size: 12px;
+  color: #6e7681;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* 閳光偓閳光偓 Toast 閳光偓閳光偓 */
+#toast {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 13px;
+  color: #e6edf3;
+  white-space: nowrap;
+  z-index: 200;
+  transition: opacity 0.3s;
+}
+#toast.hidden { display: none; }
+
+/* 閳光偓閳光偓 Spinner 閳光偓閳光偓 */
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid #30363d;
+  border-top-color: #4ade80;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 閳光偓閳光偓 Glove page iframe 閳光偓閳光偓 */
+#glove-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 8px;
+}
+.glove-launch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 20px;
+}
+.glove-launch svg { width: 64px; height: 64px; color: #4ade80; opacity: 0.7; }
+
+/* 閳光偓閳光偓 File item 閳光偓閳光偓 */
+.file-size { font-size: 11px; color: #6e7681; }
+.file-del {
+  background: none; border: none; color: #f85149; padding: 6px;
+  cursor: pointer; border-radius: 6px; line-height: 1;
+}
+.file-del:active { background: #3d1a1a; }
+
+/* 閳光偓閳光偓 Info row 閳光偓閳光偓 */
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #21262d;
+  font-size: 14px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row-key { color: #8b949e; }
+.info-row-val { color: #e6edf3; font-weight: 500; }
+
+/* 閳光偓閳光偓 Scroll 閳光偓閳光偓 */
+.page::-webkit-scrollbar { width: 4px; }
+.page::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+/* 閳光偓閳光偓 Glove service status 閳光偓閳光偓 */
+.svc-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 20px; font-size: 12px;
+  font-weight: 600;
+}
+.svc-active   { background: #1a4d2e; color: #3fb950; }
+.svc-inactive { background: #3d1a1a; color: #f85149; }
