@@ -1,6 +1,6 @@
 /* 閳光偓閳光偓 Reset & base 閳光偓閳光偓 */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100vw; height: 100vh; overflow: hidden; touch-action: manipulation; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; touch-action: manipulation; }
 
 body {
   background: #0d1117;
