@@ -365,7 +365,24 @@ async function apiStatus(req, res) {
   // Wired (USB-serial) gloves present per hand, by PID. The glove/calibration
   // tab uses this so a wired glove is shown connected + individually calibratable.
   const wiredGloves = getWiredGloves();
-  json(res, { battery, storage, wifi, bluetooth, wiredGloves, calibrator, recordings, ts: Date.now() });
+
+  // unified_capture camera status (if active)
+  let captureStatus = null;
+  if (await captureActive()) {
+    try {
+      const st = await captureCtl('status', 2000);
+      if (st && st.ok) {
+        captureStatus = {
+          ready: !!st.ready, recording: !!st.running,
+          cameras: st.cameras || {}, imu: !!st.imu,
+          as5600: !!st.as5600, vive: !!st.vive,
+        };
+      }
+    } catch {}
+  }
+
+  json(res, { battery, storage, wifi, bluetooth, wiredGloves, calibrator, recordings,
+              captureStatus, ts: Date.now() });
 }
 
 // TODO(v0.2): GET /api/wifi/scan — 扫描 WiFi 网络列表
@@ -524,8 +541,111 @@ async function apiBtDisconnect(req, res) {
   json(res, { ok: true });
 }
 
+// ── unified_capture file scanning ────────────────────────────────────────
+// Maps the unified_capture session_NNN directory tree to the Recording type
+// that the frontend expects (same fields as the old recording_* scanner).
+const CAPTURE_DATA_DIR = process.env.CAPTURE_DATA_DIR || '/data/capture';
+
+function scanCaptureSessions(ext) {
+  const files = [];
+  let entries = [];
+  try { entries = fs.readdirSync(CAPTURE_DATA_DIR); } catch { return files; }
+
+  for (const name of entries) {
+    if (!name.startsWith('session_')) continue;
+    const sp = path.join(CAPTURE_DATA_DIR, name);
+    let st;
+    try { st = fs.statSync(sp); } catch { continue; }
+    if (!st.isDirectory()) continue;
+
+    // Total size (du -sk equivalent)
+    let totalSize = 0;
+    (function du(dir) {
+      try {
+        for (const f of fs.readdirSync(dir)) {
+          const fp = path.join(dir, f);
+          const s = fs.statSync(fp);
+          if (s.isDirectory()) du(fp);
+          else totalSize += s.size;
+        }
+      } catch {}
+    })(sp);
+
+    // Detect content from subdirectories
+    let subDirs = [];
+    try { subDirs = fs.readdirSync(sp).filter(f => {
+      try { return fs.statSync(path.join(sp, f)).isDirectory(); } catch { return false; }
+    }); } catch {}
+
+    // color = any .mkv in any camera subdir
+    const hasColor = subDirs.some(d => {
+      try { return fs.readdirSync(path.join(sp, d)).some(f => f.endsWith('.mkv')); }
+      catch { return false; }
+    });
+    // IMU = any *_imu.jsonl in any subdir
+    const hasImu = subDirs.some(d => {
+      try { return fs.readdirSync(path.join(sp, d)).some(f => f.endsWith('_imu.jsonl')); }
+      catch { return false; }
+    });
+    // AS5600 encoder data
+    const topFiles = (() => {
+      try { return fs.readdirSync(sp).filter(f => {
+        try { return fs.statSync(path.join(sp, f)).isFile(); } catch { return false; }
+      }); } catch { return []; }
+    })();
+    const hasEncoder = topFiles.includes('encoder.jsonl');
+    const hasTracker = topFiles.includes('tracker.jsonl');
+
+    // Transfer state
+    let transferring = false, transferred = false, transferPct = 0;
+    if (ext) {
+      const tj = _transferring.get(name);
+      if (tj) {
+        transferring = true;
+        const done = (() => { let n = 0;
+          try { (function d(dir) { for (const f of fs.readdirSync(dir)) { const fp = path.join(dir, f); if (fs.statSync(fp).isDirectory()) d(fp); else n += fs.statSync(fp).size; } })(tj.dstDir); } catch {}
+          return n;
+        })();
+        transferPct = tj.srcBytes > 0 ? Math.min(99, Math.round(done * 100 / tj.srcBytes)) : 0;
+      } else {
+        transferred = dirTransferred(sp, path.join(ext.mount, 'records', name));
+      }
+    }
+
+    // unified_capture always has decoded IMU (JSONL inline) — no post-processing needed
+    files.push({
+      name, size: totalSize, mtime: st.mtimeMs,
+      hasColor, hasDepth: false, hasGlove: false, hasImu,
+      hasStereo: hasColor, hasAudio: false,
+      decoded: true, decoding: false, needsDecode: false,
+      transferring, transferred, transferPct,
+      // extra fields for future use
+      hasEncoder, hasTracker, cameraCount: subDirs.length,
+    });
+  }
+  files.sort((a, b) => b.mtime - a.mtime);
+  return files;
+}
+
 // TODO(v0.2): GET /api/files — 列出所有录制文件及外部磁盘状态
 async function apiFiles(req, res) {
+  // unified_capture: scan session_NNN directories
+  if (await captureActive()) {
+    try {
+      const ext = getExternalDisk();
+      const files = scanCaptureSessions(ext);
+      let externalDisk = null;
+      if (ext) {
+        let free = 0, total = 0;
+        try { const s = fs.statfsSync(ext.mount); free = s.bavail * s.bsize; total = s.blocks * s.bsize; } catch {}
+        externalDisk = { present: true, mount: ext.mount, dev: ext.dev, free, total };
+      }
+      return json(res, { files, root: CAPTURE_DATA_DIR, externalDisk });
+    } catch (e) {
+      return json(res, { files: [], root: CAPTURE_DATA_DIR, externalDisk: null, error: e.message });
+    }
+  }
+
   try {
     const entries = fs.readdirSync(RECORD_DIR);
     const ext = getExternalDisk();
@@ -605,7 +725,8 @@ async function apiFilesDelete(req, res, name) {
   if (!name || name.includes('..') || name.includes('/')) {
     return json(res, { ok: false, error: 'invalid name' }, 400);
   }
-  const fp = path.join(RECORD_DIR, name);
+  const baseDir = (await captureActive()) ? CAPTURE_DATA_DIR : RECORD_DIR;
+  const fp = path.join(baseDir, name);
   const out = await sh(`rm -rf ${JSON.stringify(fp)} 2>/dev/null && echo ok`);
   json(res, { ok: out.trim() === 'ok' });
 }
@@ -619,9 +740,13 @@ const _decoding = new Map(); // recName → child process
 const SCRIPTS_DIR = path.join(__dirname, 'scripts');
 
 // TODO(v0.2): POST /api/recordings/:name/decode — 按需解码 IMU（后处理）
-function apiDecode(req, res, recName) {
+async function apiDecode(req, res, recName) {
   if (!recName || recName.includes('..') || recName.includes('/')) {
     return json(res, { ok: false, error: 'invalid name' }, 400);
+  }
+  // unified_capture: IMU is always decoded (JSONL inline), no post-processing
+  if (await captureActive()) {
+    return json(res, { ok: true, alreadyDecoded: true });
   }
   const recDir = path.join(RECORD_DIR, recName);
   const stereoDir = path.join(recDir, 'stereo');
@@ -726,11 +851,12 @@ function dirTransferred(src, dst) {
 const _transferring = new Map();
 
 // TODO(v0.2): POST /api/recordings/:name/transfer — 传输到外部 USB 磁盘（不删本地）
-function apiTransfer(req, res, recName) {
+async function apiTransfer(req, res, recName) {
   if (!recName || recName.includes('..') || recName.includes('/')) {
     return json(res, { ok: false, error: 'invalid name' }, 400);
   }
-  const srcDir = path.join(RECORD_DIR, recName);
+  const baseDir = (await captureActive()) ? CAPTURE_DATA_DIR : RECORD_DIR;
+  const srcDir = path.join(baseDir, recName);
   if (!fs.existsSync(srcDir)) return json(res, { ok: false, error: 'not_found' }, 404);
   const ext = getExternalDisk();
   if (!ext) return json(res, { ok: false, error: 'no_disk' }, 404);
@@ -833,12 +959,13 @@ function streamFile(res, fp, mime) {
 
 // Stream a file from a recording dir (for in-browser playback / download)
 // TODO(v0.2): GET /api/recordings/:name/:fileName — 流式传输录制目录内任意文件（支持 Range 分段）
-function apiRecordingFile(req, res, recName, fileName) {
+async function apiRecordingFile(req, res, recName, fileName) {
   if (!recName || recName.includes('..') || recName.includes('/') ||
       !fileName || fileName.includes('..')) {
     return json(res, { error: 'invalid path' }, 400);
   }
-  const fp = path.join(RECORD_DIR, recName, fileName);
+  const baseDir = (await captureActive()) ? CAPTURE_DATA_DIR : RECORD_DIR;
+  const fp = path.join(baseDir, recName, fileName);
   let st;
   try { st = fs.statSync(fp); } catch { return json(res, { error: 'not found' }, 404); }
   const ext = path.extname(fileName).toLowerCase();
