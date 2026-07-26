@@ -8,6 +8,7 @@ set -e
 PORT=8080
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SERVER="$PROJECT_DIR/server.cjs"
+CAPTURE_SOCK="/tmp/unified_capture.sock"
 CHROMIUM_LOG="/tmp/chromium-ui.log"
 SERVER_LOG="/tmp/device-ui.log"
 PID_FILE="/tmp/device-ui.pid"
@@ -58,7 +59,19 @@ do_start() {
     do_stop
     sleep 1
 
-    # 1. 启动 Node.js 后端
+    # 1. Wait for unified_capture (if it's supposed to be running)
+    if systemctl is-active --quiet unified_capture 2>/dev/null; then
+        log_info "等待 unified_capture 就绪..."
+        for i in $(seq 1 20); do
+            if echo "status" | nc -U "$CAPTURE_SOCK" 2>/dev/null | grep -q '"ok":true'; then
+                log_info "unified_capture 已就绪"
+                break
+            fi
+            sleep 1
+        done
+    fi
+
+    # 2. 启动 Node.js 后端
     log_info "启动后端服务..."
     cd "$PROJECT_DIR"
     nohup node "$SERVER" > "$SERVER_LOG" 2>&1 &
@@ -74,7 +87,7 @@ do_start() {
         sleep 1
     done
 
-    # 2. 启动 Chromium kiosk
+    # 3. 启动 Chromium kiosk
     log_info "启动 Chromium 全屏..."
     DISPLAY=:0 nohup /usr/bin/chromium \
         --use-gl=egl \
