@@ -1308,6 +1308,27 @@ async function apiCameraPreview(req, res) {
   // Update reference timestamp for "active recording" detection
   await sh(`touch /tmp/.rec_ts 2>/dev/null`);
 
+  // unified_capture: request a downscaled JPEG from the capture daemon.
+  // The preview must be armed via /api/camera/live/start first.
+  if (await captureActive()) {
+    if (!_stereoPreview) {
+      res.writeHead(503);
+      return res.end('preview not started');
+    }
+    const r = await captureCtl(`preview:${PREVIEW_FILE}`, 5000);
+    if (r && r.ok && fs.existsSync(PREVIEW_FILE)) {
+      const data = fs.readFileSync(PREVIEW_FILE);
+      res.writeHead(200, {
+        'Content-Type': 'image/jpeg',
+        'Content-Length': data.length,
+        'Cache-Control': 'no-store'
+      });
+      return res.end(data);
+    }
+    res.writeHead(503);
+    return res.end('no preview available');
+  }
+
   // Stereo cam: let the daemon produce the frame (live when idle, or scraped
   // from the recording MKV tail while recording) - it owns /dev/video0.
   if (await stereoActive()) {
