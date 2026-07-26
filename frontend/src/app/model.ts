@@ -39,4 +39,8 @@ export const FALLBACK_RECORD: RecordStatus = {
   recording: false,
   previewing: false,
   guidaviewReady: false,
+  cameras: {},
+  imu: false,
+  as5600: false,
+  vive: false,
 }

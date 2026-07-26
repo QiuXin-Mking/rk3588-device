@@ -19,6 +19,7 @@ export type DeviceStatus = {
   wiredGloves?: { left?: boolean; right?: boolean }
   calibrator: { active: boolean; state: string }
   recordings: { count: number; last: string; lastTime: number | null }
+  captureStatus?: { ready: boolean; recording: boolean; cameras: Record<string, boolean>; imu: boolean; as5600: boolean; vive: boolean }
   ts: number
 }
 
@@ -34,6 +35,11 @@ export type RecordStatus = {
   guidaviewReady: boolean
   currentDir?: string
   stereo?: boolean
+  // unified_capture extensions
+  cameras?: Record<string, boolean>
+  imu?: boolean
+  as5600?: boolean
+  vive?: boolean
 }
 
 export type Recording = {
