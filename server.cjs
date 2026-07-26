@@ -985,6 +985,39 @@ function stereoCtl(cmd, timeoutMs = 8000) {
   });
 }
 
+// ── unified_capture integration ─────────────────────────────────────────
+// Talk to the unified_capture daemon over its control socket. Same short-
+// connection pattern as stereoCtl, so we never hold the socket open and
+// never create extra threads (critical: TSTC/MPP break on extra pthreads).
+const CAPTURE_SOCK = '/tmp/unified_capture.sock';
+
+function captureCtl(cmd, timeoutMs = 12000) {
+  return new Promise((resolve) => {
+    let done = false, buf = '';
+    const finish = (o) => { if (!done) { done = true; resolve(o); } };
+    const c = net.connect(CAPTURE_SOCK);
+    const to = setTimeout(() => { try { c.destroy(); } catch {} finish({ ok: false, error: 'timeout' }); }, timeoutMs);
+    c.on('connect', () => c.write(cmd + '\n'));
+    c.on('data', (d) => { buf += d.toString(); });
+    c.on('end', () => { clearTimeout(to); try { finish(JSON.parse(buf.trim())); } catch { finish({ ok: false, error: 'parse', raw: buf }); } });
+    c.on('error', (e) => { clearTimeout(to); finish({ ok: false, error: 'unreachable' }); });
+  });
+}
+
+// True when unified_capture is the active camera backend (its socket is up
+// and responding). This is mutually exclusive with stereoActive() — the two
+// backends share the same set of USB devices and cannot run simultaneously.
+let _captureCache = { ts: 0, active: false };
+async function captureActive() {
+  const now = Date.now();
+  if (now - _captureCache.ts < 3000) return _captureCache.active;
+  try {
+    const r = await captureCtl('status', 2000);
+    _captureCache = { ts: now, active: !!(r && r.ok) };
+  } catch { _captureCache = { ts: now, active: false }; }
+  return _captureCache.active;
+}
+
 // External USB microphone presence. Mirrors stereo_cam_record.py's _find_usb_mic
 // so the record tab shows a mic exactly when the recorder would capture audio:
 // only USB-Audio capture cards count (the onboard codec is ignored).
@@ -1112,6 +1145,25 @@ async function getRecordStatus() {
   };
   const gloveConnected = gloveSides.left || gloveSides.right;
 
+  // unified_capture: the capture daemon owns camera state (guidaview /
+  // stereo daemon are not running when unified_capture is active, since
+  // they share the same USB devices). Glove / mic detection stay the same.
+  if (await captureActive()) {
+    const st = await captureCtl('status', 3000);
+    const sCam = !!(st && st.ok && st.ready);
+    const sRec = !!(st && st.ok && st.running);
+    return {
+      cameraConnected: sCam, cameraType: 'stereo', gloveConnected, gloveSides,
+      micConnected: mic.connected, micName: mic.name,
+      recording: sRec, previewing: sCam && !sRec && _stereoPreview,
+      guidaviewReady: sCam && !sRec,
+      currentDir: (st && st.session) || '', stereo: true,
+      // unified_capture extensions (non-breaking for frontend)
+      cameras: (st && st.cameras) || {},
+      imu: !!(st && st.imu), as5600: !!(st && st.as5600), vive: !!(st && st.vive),
+    };
+  }
+
   // When the stereo cam is the active camera, its daemon is the source of
   // truth for camera-present / recording state (guidaview is idle without the
   // Orbbec). Gloves still apply, so we keep the glove fields computed above.
@@ -1142,6 +1194,9 @@ async function apiRecordStatus(req, res) {
 // Start a disposable live preview so the worker can aim the camera.
 // TODO(v0.2): POST /api/camera/live/start — 开始实时预览（Orbbec=丢弃录制 / Stereo=标记预览态）
 async function apiLiveStart(req, res) {
+  // unified_capture: arm the preview flag; the UI then polls /api/camera/preview
+  // which requests a JPEG frame from the capture daemon on demand.
+  if (await captureActive()) { _stereoPreview = true; return json(res, { ok: true, capture: true }); }
   // Stereo cam streams on demand, so no throwaway recording is needed - just
   // arm the preview flag; the UI then polls /api/camera/preview, which serves a
   // live frame straight from the daemon (the daemon owns /dev/video0).
@@ -1165,6 +1220,8 @@ async function apiLiveStart(req, res) {
 // Stop the live preview and delete the throwaway recording.
 // TODO(v0.2): POST /api/camera/live/stop — 停止实时预览，清理丢弃录制
 async function apiLiveStop(req, res) {
+  // unified_capture: just disarm the preview flag (no throwaway recording to clean up)
+  if (await captureActive()) { _stereoPreview = false; return json(res, { ok: true, capture: true }); }
   if (await stereoActive()) { _stereoPreview = false; return json(res, { ok: true, stereo: true }); }
   if (_recBusy) return json(res, { ok: false, busy: true });
   _recBusy = true;
@@ -1182,6 +1239,25 @@ async function apiLiveStop(req, res) {
 
 // TODO(v0.2): POST /api/record/toggle — 切换录制开始/停止（支持预览→正式录制提升）
 async function apiRecordToggle(req, res) {
+  // unified_capture: delegate start/stop to its control socket
+  if (await captureActive()) {
+    if (_recBusy) return json(res, { ok: false, busy: true });
+    _recBusy = true;
+    try {
+      const st = await captureCtl('status', 5000);
+      if (!st.ok) return json(res, { ok: false, error: 'capture unreachable' });
+      if (st.running) {
+        const r = await captureCtl('stop', 15000);
+        _maybeSkipPostCapture();
+        return json(res, { ok: !!r.ok, recording: false, elapsed_ms: r.elapsed_ms || 0 });
+      } else {
+        const r = await captureCtl('start', 15000);
+        if (!r.ok) return json(res, { ok: false, error: r.error || 'start failed' });
+        return json(res, { ok: true, recording: true });
+      }
+    } finally { _recBusy = false; }
+  }
+
   if (_recBusy) return json(res, { ok: false, busy: true });
   _recBusy = true;
   try {
