@@ -1,4 +1,34 @@
 'use strict';
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// TODO(v0.2): 后端接口实现清单 — 前端驱动 (frontend/src/services/deviceApi.ts)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+//  1. GET    /api/status              设备综合状态
+//  2. GET    /api/settings             POST 读取/保存设置
+//  3. GET    /api/record/status        录制状态
+//  4. POST   /api/record/toggle        切换录制
+//  5. POST   /api/camera/live/start    开始预览
+//  6. POST   /api/camera/live/stop     停止预览
+//  7. GET    /api/camera/preview       摄像头帧 (JPEG)
+//  8. GET    /api/files                录制列表
+//  9. DELETE /api/files/:name          删除录制
+// 10. POST   /api/recordings/:name/decode  解码 IMU
+// 11. POST   /api/recordings/:name/transfer → USB
+// 12. GET    /api/recordings/:name/preview  H.264 预览
+// 13. GET    /api/recordings/:name/:file    流式文件
+// 14. GET    /api/wifi/scan            WiFi 扫描
+// 15. POST   /api/wifi/connect         WiFi 连接
+// 16. POST   /api/wifi/disconnect      WiFi 断开
+// 17. GET    /api/bt/scan              BT 扫描
+// 18. POST   /api/bt/connect           BT 连接手套
+// 19. POST   /api/bt/disconnect        BT 断开手套
+// 20. POST   /api/calibrator           校准器管理
+// 21. POST   /api/calibrate/start      开始校准
+// 22. POST   /api/calibrate/stop       停止校准
+// 23. ANY    /api/glove/cal/*          校准代理 (→ :8888)
+//
+// ═══════════════════════════════════════════════════════════════════════════════
 const http  = require('http');
 const fs    = require('fs');
 const path  = require('path');
@@ -147,6 +177,8 @@ function readBody(req) {
 }
 
 // ── Settings (post-capture toggle etc.) ───────────────────────────────────────
+// TODO(v0.2): GET  /api/settings  — 读取设置
+// TODO(v0.2): POST /api/settings  — 保存设置
 
 function loadSettings() {
   try { return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); }
@@ -167,6 +199,7 @@ async function apiSaveSettings(req, res) {
 
 // ── Calibration proxy (device-ui → localhost:CAL_PORT) ────────────────────────
 
+// TODO(v0.2): 校准代理 — /api/glove/cal/* → localhost:CAL_PORT（前端校准页面 iframe 内使用）
 function proxyToCal(method, calPath, body) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
@@ -219,6 +252,7 @@ function serveStatic(res, reqPath) {
 }
 
 // ── sysinfo ───────────────────────────────────────────────────────────────────
+// TODO(v0.2): GET /api/status — 设备综合状态（电池/存储/WiFi/蓝牙/校准器/录制）
 
 async function getBattery() {
   const [pct, status, voltStr] = await Promise.all([
@@ -323,6 +357,7 @@ async function getRecordingStats() {
 
 // ── API handlers ──────────────────────────────────────────────────────────────
 
+// TODO(v0.2): GET /api/status — 设备综合状态（电池/存储/WiFi/蓝牙/校准器/录制/有线手套）
 async function apiStatus(req, res) {
   const [battery, storage, wifi, bluetooth, calibrator, recordings] = await Promise.all([
     getBattery(), getStorage(), getWifi(), getBluetooth(), getCalibratorStatus(), getRecordingStats(),
@@ -333,6 +368,7 @@ async function apiStatus(req, res) {
   json(res, { battery, storage, wifi, bluetooth, wiredGloves, calibrator, recordings, ts: Date.now() });
 }
 
+// TODO(v0.2): GET /api/wifi/scan — 扫描 WiFi 网络列表
 async function apiWifiScan(req, res) {
   const out = await sh('nmcli -t -f ACTIVE,SSID,SIGNAL,SECURITY dev wifi list 2>/dev/null', 10000);
   const networks = [];
@@ -352,6 +388,7 @@ async function apiWifiScan(req, res) {
   json(res, { networks });
 }
 
+// TODO(v0.2): POST /api/wifi/connect {ssid, password} — 连接 WiFi，禁止自动重连
 async function apiWifiConnect(req, res) {
   const { ssid, password } = await readBody(req);
   if (!ssid) return json(res, { ok: false, error: 'missing ssid' }, 400);
@@ -390,6 +427,7 @@ async function apiWifiConnect(req, res) {
   json(res, { ok, error, output: r.out || r.err });
 }
 
+// TODO(v0.2): POST /api/wifi/disconnect — 断开 WiFi
 async function apiWifiDisconnect(req, res) {
   const out = await sh('nmcli dev disconnect wlan0 2>/dev/null || nmcli dev disconnect wlp1s0 2>/dev/null');
   json(res, { ok: true, output: out });
@@ -416,6 +454,7 @@ async function disableAllWifiAutoconnect() {
   }
 }
 
+// TODO(v0.2): GET /api/bt/scan — 扫描蓝牙设备
 async function apiBtScan(req, res) {
   // Use bleak (Python) – bluetoothctl scan on exits immediately non-interactively
   const scanPy = path.join(__dirname, 'scripts', 'bt_scan.py');
@@ -438,6 +477,7 @@ async function apiBtScan(req, res) {
 
 const BLE_REC_SVC = 'worldintel-ble-recorder';
 
+// TODO(v0.2): POST /api/bt/connect {address} — 连接手套（启动 SPP recorder）
 async function apiBtConnect(req, res) {
   const { address } = await readBody(req);
   if (!address) return json(res, { ok: false, error: 'missing address' }, 400);
@@ -474,6 +514,7 @@ async function apiBtConnect(req, res) {
   json(res, { ok: false, output: 'BLE disabled; use SPP gloves only' }, 400);
 }
 
+// TODO(v0.2): POST /api/bt/disconnect — 断开所有手套（停止 recorder）
 async function apiBtDisconnect(req, res) {
   // Stop the recorder service so it stops auto-reconnecting
   await sh(`systemctl stop ${BLE_REC_SVC} 2>/dev/null`, 5000);
@@ -483,6 +524,7 @@ async function apiBtDisconnect(req, res) {
   json(res, { ok: true });
 }
 
+// TODO(v0.2): GET /api/files — 列出所有录制文件及外部磁盘状态
 async function apiFiles(req, res) {
   try {
     const entries = fs.readdirSync(RECORD_DIR);
@@ -558,6 +600,7 @@ async function apiFiles(req, res) {
   }
 }
 
+// TODO(v0.2): DELETE /api/files/:name — 删除指定录制
 async function apiFilesDelete(req, res, name) {
   if (!name || name.includes('..') || name.includes('/')) {
     return json(res, { ok: false, error: 'invalid name' }, 400);
@@ -575,6 +618,7 @@ async function apiFilesDelete(req, res, name) {
 const _decoding = new Map(); // recName → child process
 const SCRIPTS_DIR = path.join(__dirname, 'scripts');
 
+// TODO(v0.2): POST /api/recordings/:name/decode — 按需解码 IMU（后处理）
 function apiDecode(req, res, recName) {
   if (!recName || recName.includes('..') || recName.includes('/')) {
     return json(res, { ok: false, error: 'invalid name' }, 400);
@@ -681,6 +725,7 @@ function dirTransferred(src, dst) {
 // from the Files tab when they choose to.
 const _transferring = new Map();
 
+// TODO(v0.2): POST /api/recordings/:name/transfer — 传输到外部 USB 磁盘（不删本地）
 function apiTransfer(req, res, recName) {
   if (!recName || recName.includes('..') || recName.includes('/')) {
     return json(res, { ok: false, error: 'invalid name' }, 400);
@@ -719,6 +764,7 @@ function apiTransfer(req, res, recName) {
 
 // Generate and cache a small H.264 preview clip for Chromium playback
 const _previewCache = new Map(); // name → { path, ready, callbacks }
+// TODO(v0.2): GET /api/recordings/:name/preview — 生成 H.264 预览片段供 <video> 播放
 function apiPreview(req, res, recName) {
   if (!recName || recName.includes('..') || recName.includes('/')) {
     return json(res, { error: 'invalid name' }, 400);
@@ -786,6 +832,7 @@ function streamFile(res, fp, mime) {
 }
 
 // Stream a file from a recording dir (for in-browser playback / download)
+// TODO(v0.2): GET /api/recordings/:name/:fileName — 流式传输录制目录内任意文件（支持 Range 分段）
 function apiRecordingFile(req, res, recName, fileName) {
   if (!recName || recName.includes('..') || recName.includes('/') ||
       !fileName || fileName.includes('..')) {
@@ -830,6 +877,7 @@ function apiRecordingFile(req, res, recName, fileName) {
 //   2. Tell the calibrator to connect via SPP (transport=spp)
 //   3. On stop: disconnect on the calibrator, restart the recorder.
 
+// TODO(v0.2): POST /api/calibrate/start {side, transport} — 启动校准（SPP/有线手套 → 校准器服务）
 async function apiCalibrateStart(req, res) {
   const body = await readBody(req);
   const side = (body.side === 'left') ? 'left' : 'right';
@@ -881,6 +929,7 @@ async function apiCalibrateStart(req, res) {
   json(res, { ok: true, side, path: resp.path || null });
 }
 
+// TODO(v0.2): POST /api/calibrate/stop {side, transport} — 停止校准，恢复 recorder
 async function apiCalibrateStop(req, res) {
   const body = await readBody(req);
   const side = (body.side === 'left') ? 'left' : 'right';
@@ -1085,11 +1134,13 @@ async function getRecordStatus() {
   return { cameraConnected, cameraType: cameraConnected ? 'depth' : null, gloveConnected, gloveSides, micConnected: mic.connected, micName: mic.name, recording, previewing, guidaviewReady, currentDir };
 }
 
+// TODO(v0.2): GET /api/record/status — 录制状态（相机/手套/麦克风/预览/录制中）
 async function apiRecordStatus(req, res) {
   json(res, await getRecordStatus());
 }
 
 // Start a disposable live preview so the worker can aim the camera.
+// TODO(v0.2): POST /api/camera/live/start — 开始实时预览（Orbbec=丢弃录制 / Stereo=标记预览态）
 async function apiLiveStart(req, res) {
   // Stereo cam streams on demand, so no throwaway recording is needed - just
   // arm the preview flag; the UI then polls /api/camera/preview, which serves a
@@ -1112,6 +1163,7 @@ async function apiLiveStart(req, res) {
 }
 
 // Stop the live preview and delete the throwaway recording.
+// TODO(v0.2): POST /api/camera/live/stop — 停止实时预览，清理丢弃录制
 async function apiLiveStop(req, res) {
   if (await stereoActive()) { _stereoPreview = false; return json(res, { ok: true, stereo: true }); }
   if (_recBusy) return json(res, { ok: false, busy: true });
@@ -1128,6 +1180,7 @@ async function apiLiveStop(req, res) {
   } finally { _recBusy = false; }
 }
 
+// TODO(v0.2): POST /api/record/toggle — 切换录制开始/停止（支持预览→正式录制提升）
 async function apiRecordToggle(req, res) {
   if (_recBusy) return json(res, { ok: false, busy: true });
   _recBusy = true;
@@ -1174,6 +1227,7 @@ function _maybeSkipPostCapture() {
   }, 3000);
 }
 
+// TODO(v0.2): GET /api/camera/preview — 返回当前摄像头 JPEG 帧（<img src> 使用）
 async function apiCameraPreview(req, res) {
   // Update reference timestamp for "active recording" detection
   await sh(`touch /tmp/.rec_ts 2>/dev/null`);
@@ -1201,6 +1255,7 @@ async function apiCameraPreview(req, res) {
   res.end('no preview available');
 }
 
+// TODO(v0.2): POST /api/calibrator {action: start|stop|restart} — 控制校准器 systemd 服务
 async function apiCalibrator(req, res) {
   const { action } = await readBody(req);
   if (!['start', 'stop', 'restart'].includes(action)) {
@@ -1213,6 +1268,22 @@ async function apiCalibrator(req, res) {
 }
 
 // ── router ────────────────────────────────────────────────────────────────────
+//
+// TODO(v0.2): 以下所有 API 路由需要在 v0.2 后端正交实现。
+// 前端接口定义来源: frontend/src/services/deviceApi.ts
+//
+// System:        GET  /api/status               POST /api/settings
+// Camera:        GET  /api/camera/preview        POST /api/camera/live/start|stop
+// Record:        GET  /api/record/status         POST /api/record/toggle
+// Files:         GET  /api/files                 DELETE /api/files/:name
+// Recordings:    POST /api/recordings/:name/decode|transfer
+//                GET  /api/recordings/:name/preview
+//                GET  /api/recordings/:name/:fileName
+// WiFi:          GET  /api/wifi/scan             POST /api/wifi/connect|disconnect
+// Bluetooth:     GET  /api/bt/scan               POST /api/bt/connect|disconnect
+// Calibration:   POST /api/calibrator             POST /api/calibrate/start|stop
+// Proxy:         ANY  /api/glove/cal/*
+// ────────────────────────────────────────────────────────────────────────────────
 
 const server = http.createServer(async (req, res) => {
   const parsed  = url.parse(req.url || '/');
