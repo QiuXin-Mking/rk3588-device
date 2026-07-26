@@ -1443,14 +1443,22 @@ async function apiCameraPreview(req, res) {
       return res.end('preview not started');
     }
     const r = await captureCtl(`preview:${PREVIEW_FILE}`, 5000);
-    if (r && r.ok && fs.existsSync(PREVIEW_FILE)) {
-      const data = fs.readFileSync(PREVIEW_FILE);
-      res.writeHead(200, {
-        'Content-Type': 'image/jpeg',
-        'Content-Length': data.length,
-        'Cache-Control': 'no-store'
-      });
-      return res.end(data);
+    if (r && r.ok) {
+      // The capture daemon sets a flag and returns immediately; the actual JPEG
+      // is written on the next frame in the collect() thread (up to ~33ms at
+      // 30fps). Wait up to 1s for the file to appear.
+      for (let i = 0; i < 20; i++) {
+        if (fs.existsSync(PREVIEW_FILE)) {
+          const data = fs.readFileSync(PREVIEW_FILE);
+          res.writeHead(200, {
+            'Content-Type': 'image/jpeg',
+            'Content-Length': data.length,
+            'Cache-Control': 'no-store'
+          });
+          return res.end(data);
+        }
+        await new Promise(r => setTimeout(r, 50));
+      }
     }
     res.writeHead(503);
     return res.end('no preview available');
