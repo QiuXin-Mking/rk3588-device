@@ -1,8 +1,10 @@
 import {
   Activity,
   Bluetooth,
+  Camera,
   ChevronRight,
   CircleUserRound,
+  Cpu,
   Database,
   ExternalLink,
   Eye,
@@ -21,9 +23,11 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  Video,
   Wifi,
   WifiOff,
   Wrench,
+  Zap,
   X,
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -45,6 +49,89 @@ import {
   PageHeader,
 } from '../../shared/ui/DevicePrimitives'
 import { TouchKeyboard } from '../../shared/ui/TouchKeyboard'
+
+// ── 设备套件定义 ──────────────────────────────────────────────────────
+type DataLabel = 'MKV' | 'Y8' | 'IMU' | 'Encoder' | 'Tracker'
+
+interface DeviceSuite {
+  id: string
+  name: string
+  subtitle: string
+  icon: ReactNode
+  dataLabels: DataLabel[]
+  /** key in record.cameras, or null if non-camera device */
+  cameraKey: string | null
+  /** alternative connection check */
+  altConnected?: (record: RecordStatus) => boolean
+}
+
+const DEVICE_SUITES: DeviceSuite[] = [
+  {
+    id: 'ego_h',
+    name: 'Ego_H',
+    subtitle: '头部Ego',
+    icon: <Camera size={20} />,
+    dataLabels: ['MKV', 'Y8', 'IMU'],
+    cameraKey: 'jhh2_left',
+  },
+  {
+    id: 'ego_w',
+    name: 'Ego_W',
+    subtitle: '腕部Ego',
+    icon: <Radio size={20} />,
+    dataLabels: ['MKV', 'Y8', 'IMU'],
+    cameraKey: 'jhh2_right',
+  },
+  {
+    id: 'umi_fingers',
+    name: 'UMI_Fingers',
+    subtitle: '指尖夹爪',
+    icon: <Zap size={20} />,
+    dataLabels: ['MKV', 'Y8', 'IMU'],
+    cameraKey: 'jhh02',
+  },
+  {
+    id: 'umi_grippers',
+    name: 'UMI_Grippers',
+    subtitle: '板机夹爪',
+    icon: <Wrench size={20} />,
+    dataLabels: [],
+    cameraKey: null,
+  },
+  {
+    id: 'suits',
+    name: 'Suits',
+    subtitle: '手套',
+    icon: <Hand size={20} />,
+    dataLabels: [],
+    cameraKey: null,
+    altConnected: (r) => !!(r.gloveSides?.left || r.gloveSides?.right),
+  },
+]
+
+const DATA_LABEL_STYLES: Record<DataLabel, { bg: string; fg: string }> = {
+  MKV:     { bg: '#1a3a5c', fg: '#6cb4ee' },
+  Y8:      { bg: '#1a3a1a', fg: '#6cda6c' },
+  IMU:     { bg: '#3a2a1a', fg: '#eebb55' },
+  Encoder: { bg: '#3a1a3a', fg: '#cc77cc' },
+  Tracker: { bg: '#2a1a3a', fg: '#9988dd' },
+}
+
+function isDeviceConnected(d: DeviceSuite, record: RecordStatus): boolean {
+  if (d.altConnected) return d.altConnected(record)
+  if (d.cameraKey && record.cameras) return !!record.cameras[d.cameraKey]
+  return false
+}
+
+// ── 数据标签小组件 ────────────────────────────────────────────────────
+function DataBadge({ label }: { label: DataLabel }) {
+  const s = DATA_LABEL_STYLES[label]
+  return (
+    <span className="data-badge" style={{ background: s.bg, color: s.fg }}>
+      {label}
+    </span>
+  )
+}
 
 export function ProfileScreen({ status, online, go, notify }: ScreenCommonProps) {
   return (
@@ -116,42 +203,63 @@ function ProfileItem({
 
 export function DeviceListScreen({
   status,
+  record,
   back,
   go,
 }: {
   status: DeviceStatus
+  record: RecordStatus
   back: () => void
   go: Navigate
 }) {
+  const connectedCount = DEVICE_SUITES.filter(d => isDeviceConnected(d, record)).length
+
   return (
     <div className="page detail-page device-list-screen">
       <PageHeader
-        title="管理设备"
-        subtitle="已绑定设备"
+        title="设备与套件"
+        subtitle={`${connectedCount}/${DEVICE_SUITES.length} 在线`}
         back={back}
         action={
           <div className="header-actions">
             <button className="header-action-button" onClick={() => go('package-download')}>大包下载</button>
-            <button className="icon-button" onClick={() => go('device-type')} aria-label="添加设备"><QrCode /></button>
           </div>
         }
       />
       <div className="split-workspace">
-        <button className="device-row card" onClick={() => go('device-info')}>
-          <span className="device-cube"><Database /></span>
-          <span>
-            <strong>iSuit_96</strong>
-            <small><span className="status-dot" /> {status.ts ? '本机设备' : '离线'}</small>
-          </span>
-          <span className="device-power"><Power /></span>
-          <ChevronRight />
-        </button>
+        <div className="device-list local-scroll">
+          {DEVICE_SUITES.map(d => {
+            const connected = isDeviceConnected(d, record)
+            return (
+              <button
+                key={d.id}
+                className="device-row card"
+                onClick={() => go('device-info')}
+              >
+                <span className={`device-icon ${connected ? 'online' : ''}`}>
+                  {d.icon}
+                </span>
+                <span className="device-meta">
+                  <strong>{d.name}</strong>
+                  <small>{d.subtitle}</small>
+                  {d.dataLabels.length > 0 && (
+                    <span className="data-badges">
+                      {d.dataLabels.map(l => <DataBadge key={l} label={l} />)}
+                    </span>
+                  )}
+                </span>
+                <span className={`status-dot ${connected ? 'ok' : ''}`} />
+                <ChevronRight size={16} />
+              </button>
+            )
+          })}
+        </div>
         <section className="card center-panel">
           <EmptyState
             icon={<ScanLine />}
-            title="添加更多设备"
+            title="添加套件"
             description="支持扫码绑定和设备类型选择。"
-            action={<button className="secondary-button" onClick={() => go('device-type')}>添加设备</button>}
+            action={<button className="secondary-button" onClick={() => go('device-type')}>绑定套件</button>}
           />
         </section>
       </div>
@@ -162,18 +270,23 @@ export function DeviceListScreen({
 export function DeviceTypeScreen({ back, go }: { back: () => void; go: Navigate }) {
   return (
     <div className="page detail-page">
-      <PageHeader title="选择设备类型" subtitle="选择需要绑定的设备" back={back} />
+      <PageHeader title="选择设备类型" subtitle="选择需要绑定的套件" back={back} />
       <div className="device-type-grid">
-        <button className="device-type-card card" onClick={() => go('qr-scan')}>
-          <div className="wearable-illustration"><Hand /></div>
-          <div><h2>HSuit</h2><p>手部动作捕捉套件</p></div>
-          <ChevronRight />
-        </button>
-        <button className="device-type-card card" onClick={() => go('qr-scan')}>
-          <div className="wearable-illustration"><Activity /></div>
-          <div><h2>iSuit</h2><p>多传感器采集套件</p></div>
-          <ChevronRight />
-        </button>
+        {DEVICE_SUITES.map(d => (
+          <button key={d.id} className="device-type-card card" onClick={() => go('qr-scan')}>
+            <span className="device-icon" style={{ width: 72, height: 72, borderRadius: 22 }}>{d.icon}</span>
+            <div>
+              <h2>{d.name}</h2>
+              <p>{d.subtitle}</p>
+              {d.dataLabels.length > 0 && (
+                <span className="data-badges">
+                  {d.dataLabels.map(l => <DataBadge key={l} label={l} />)}
+                </span>
+              )}
+            </div>
+            <ChevronRight />
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -220,43 +333,47 @@ export function DeviceInfoScreen({
   record: RecordStatus
   back: () => void
 }) {
-  const sensors = [
-    ['左手相机', false],
-    ['左手压力', Boolean(record.gloveSides?.left)],
-    ['右手相机', false],
-    ['右手压力', Boolean(record.gloveSides?.right)],
-  ] as const
-
   return (
     <div className="page detail-page device-info-screen">
-      <PageHeader title="设备信息" subtitle="iSuit_96" back={back} />
+      <PageHeader title="设备与套件" subtitle="运行状态" back={back} />
       <div className="device-info-layout">
-        <section className="device-figure card">
-          <HumanFigure />
-          <div className="device-health">
-            <span className="status-dot" />
-            {record.cameraConnected || record.gloveConnected ? '部分传感器在线' : '等待传感器'}
-          </div>
-        </section>
         <section className="device-specs card">
-          <span className="eyebrow">DEVICE STATUS</span>
-          <h2>运行状态</h2>
+          <span className="eyebrow">SYSTEM STATUS</span>
+          <h2>系统状态</h2>
           <dl>
             <div><dt>电量</dt><dd>{status.battery.pct}%</dd></div>
             <div><dt>电压</dt><dd>{status.battery.voltage || '—'} V</dd></div>
             <div><dt>存储</dt><dd>{formatBytes(status.storage.used)} / {formatBytes(status.storage.total)}</dd></div>
             <div><dt>网络</dt><dd>{status.wifi.connected ? status.wifi.ssid : '未连接'}</dd></div>
-            <div><dt>相机</dt><dd>{record.cameraConnected ? record.cameraType || '在线' : '离线'}</dd></div>
+            <div><dt>录制</dt><dd>{record.recording ? '录制中' : '空闲'}</dd></div>
           </dl>
         </section>
-        <section className="sensor-grid">
-          {sensors.map(([name, ok]) => (
-            <div className="sensor-tile card" key={name}>
-              <span className={`signal ${ok ? 'ok' : ''}`} />
-              <strong>{name}</strong>
-              <small>{ok ? '在线' : '通道待接入'}</small>
-            </div>
-          ))}
+        <section className="device-list-section">
+          <span className="eyebrow">DEVICE SUITES</span>
+          <h2>套件状态</h2>
+          <div className="device-info-grid">
+            {DEVICE_SUITES.map(d => {
+              const connected = isDeviceConnected(d, record)
+              return (
+                <div className={`device-info-card card ${connected ? 'border-ok' : ''}`} key={d.id}>
+                  <span className={`device-icon ${connected ? 'online' : ''}`}>{d.icon}</span>
+                  <div className="device-info-card-body">
+                    <strong>{d.name}</strong>
+                    <small>{d.subtitle}</small>
+                    <div className="device-info-status">
+                      <span className={`status-dot ${connected ? 'ok' : ''}`} />
+                      {connected ? '已连接' : '未连接'}
+                    </div>
+                    {d.dataLabels.length > 0 && (
+                      <span className="data-badges" style={{ marginTop: 6 }}>
+                        {d.dataLabels.map(l => <DataBadge key={l} label={l} />)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </section>
       </div>
     </div>

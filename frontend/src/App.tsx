@@ -181,7 +181,7 @@ function App() {
           />
         )
       case 'device-list':
-        return <DeviceListScreen status={status} back={back} go={go} />
+        return <DeviceListScreen status={status} record={record} back={back} go={go} />
       case 'device-type':
         return <DeviceTypeScreen back={back} go={go} />
       case 'qr-scan':
