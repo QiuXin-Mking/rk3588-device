@@ -39,7 +39,7 @@
 
 ```bash
 cd /path/to/device-ui
-PORT=8080 RECORD_DIR=/media/usb0/records node server.js &
+PORT=8080 RECORD_DIR=/media/usb0/capture node server.js &
 ```
 
 然后浏览器打开 `http://设备IP:8080`。

@@ -38,7 +38,7 @@ const net   = require('net');
 
 const PORT       = parseInt(process.env.PORT || '8080', 10);
 const STATIC_DIR = path.join(__dirname, 'static');
-const RECORD_DIR = process.env.RECORD_DIR || '/media/usb0/records';
+const RECORD_DIR = process.env.RECORD_DIR || '/media/usb0/capture';
 const CAL_SVC    = 'worldintel-glove-calibrator.service';
 const WIRED_REC_SVC = 'worldintel-wired-recorder';
 const CAL_PORT   = parseInt(process.env.CAL_PORT || '8888', 10);
@@ -1187,7 +1187,7 @@ function pressRecordButton() {
 // Ground truth for "is recording": a color_*.mkv touched within the last few
 // seconds means guidaview is actively writing. This is stable (no race) unlike
 // the previous "-newer <now>" check that flickered the UI between start/stop.
-// NOTE: RECORD_DIR (/media/usb0/records) is the SD card mount point, and
+// NOTE: RECORD_DIR (/media/usb0/capture) is the SD card recording directory, and
 // `find` does not descend into a symlinked start point without -L. Missing -L
 // made this always return false, so Orbbec "start preview" never detected the
 // throwaway recording (it timed out and fell into a bare recording instead).

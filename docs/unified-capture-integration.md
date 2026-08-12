@@ -76,7 +76,7 @@ device-ui 的 `server.cjs` 新增了 unified_capture 后端支持。当 unified_
 ### GET /api/files（根路径变更）
 
 - unified_capture 模式: `root = "/data/capture"`
-- 旧模式: `root = "/media/usb0/records"`（不变）
+- 旧模式: `root = "/media/usb0/capture"`（不变）
 
 ## 提交历史
 
