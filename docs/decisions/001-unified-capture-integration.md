@@ -34,7 +34,7 @@ device-ui 当前后端对接两种摄像头系统：
    - `getRecordStatus` → `captureCtl('status')` → 字段映射
    - `apiCameraPreview` → `captureCtl('preview:<path>')` + 重试等待
    - `apiFiles` → `scanCaptureSessions()` 扫描 `session_NNN` 目录树
-3. **文件路径:** capture 模式使用 `/data/capture`，旧模式保持 `/mnt/ums/records`
+3. **文件路径:** capture 模式使用 `/data/capture`，旧模式保持 `/media/usb0/records`
 4. **互斥性:** 两套系统共享 USB 设备，物理上不同时运行，自动检测即可
 
 **后果:**

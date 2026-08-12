@@ -89,7 +89,7 @@ do_start() {
 
     # 3. 启动 Chromium kiosk
     log_info "启动 Chromium 全屏..."
-    DISPLAY=:0 nohup /usr/bin/chromium \
+    DISPLAY=:0 nohup dbus-launch --exit-with-session /usr/bin/chromium \
         --use-gl=egl \
         --no-sandbox \
         --gpu-sandbox-start-early \

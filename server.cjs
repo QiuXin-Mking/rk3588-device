@@ -38,7 +38,7 @@ const net   = require('net');
 
 const PORT       = parseInt(process.env.PORT || '8080', 10);
 const STATIC_DIR = path.join(__dirname, 'static');
-const RECORD_DIR = process.env.RECORD_DIR || '/mnt/ums/records';
+const RECORD_DIR = process.env.RECORD_DIR || '/media/usb0/records';
 const CAL_SVC    = 'worldintel-glove-calibrator.service';
 const WIRED_REC_SVC = 'worldintel-wired-recorder';
 const CAL_PORT   = parseInt(process.env.CAL_PORT || '8888', 10);
@@ -268,7 +268,7 @@ async function getBattery() {
 }
 
 async function getStorage() {
-  const out = await sh(`df -k ${RECORD_DIR} 2>/dev/null || df -k /mnt/ums 2>/dev/null || df -k /`);
+  const out = await sh(`df -k ${RECORD_DIR} 2>/dev/null || df -k /media/usb0 2>/dev/null || df -k /`);
   const line = out.split('\n').find(l => /^\// .test(l));
   if (!line) return { used: 0, total: 0, pct: 0 };
   const parts = line.trim().split(/\s+/);
@@ -1187,7 +1187,7 @@ function pressRecordButton() {
 // Ground truth for "is recording": a color_*.mkv touched within the last few
 // seconds means guidaview is actively writing. This is stable (no race) unlike
 // the previous "-newer <now>" check that flickered the UI between start/stop.
-// NOTE: RECORD_DIR (/mnt/ums/records) is a SYMLINK to /mnt/record/records, and
+// NOTE: RECORD_DIR (/media/usb0/records) is the SD card mount point, and
 // `find` does not descend into a symlinked start point without -L. Missing -L
 // made this always return false, so Orbbec "start preview" never detected the
 // throwaway recording (it timed out and fell into a bare recording instead).
