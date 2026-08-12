@@ -1,7 +1,7 @@
 'use strict';
 
-const defaultFs = require('node:fs');
-const path = require('node:path');
+const defaultFs = require('fs');
+const path = require('path');
 
 const MARKER = '.device-ui-preview';
 const SESSION_NAME = /^session_[0-9]{3,}$/;
