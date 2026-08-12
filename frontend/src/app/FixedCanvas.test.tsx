@@ -15,5 +15,6 @@ describe('fixed 1920x1080 canvas', () => {
     const canvas = screen.getByTestId('device-canvas')
     expect(canvas).toHaveStyle({ width: '1920px', height: '1080px' })
     expect(canvas.style.getPropertyValue('--canvas-scale')).not.toBe('')
+    expect(canvas).toHaveClass('device-canvas')
   })
 })
