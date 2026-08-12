@@ -1630,7 +1630,16 @@
   gap: 14px;
 }
 
-.dual-preview .camera-feed {
+.mango-preview-grid {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template: 1fr 1fr / 1fr 1fr;
+  gap: 14px;
+}
+
+.dual-preview .camera-feed,
+.mango-preview-grid .camera-feed {
   border: 0;
   padding: 0;
   background: transparent;

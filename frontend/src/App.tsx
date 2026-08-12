@@ -185,6 +185,7 @@ function App() {
       case 'capture':
         return (
           <CaptureScreen
+            product={product ?? 'Banana'}
             record={record}
             files={files}
             busy={busy}

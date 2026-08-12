@@ -373,6 +373,7 @@ export function TaskClaimScreen({
 }
 
 export function CaptureScreen({
+  product,
   record,
   files,
   busy,
@@ -381,6 +382,7 @@ export function CaptureScreen({
   refreshStatus,
   toggleRecord,
 }: {
+  product: SelectableProduct
   record: RecordStatus
   files: FilesResponse
   busy: boolean
@@ -438,6 +440,12 @@ export function CaptureScreen({
   }
 
   const liveActive = record.previewing || record.recording
+  const mangoPreviews = [
+    { title: '头部双目', camera: 'jhh02', route: 'head-stereo' },
+    { title: '头部四目', camera: 'jhh04', route: 'head-four' },
+    { title: '左腕部单目', camera: 'wrist_left', route: 'wrist-left' },
+    { title: '右腕部单目', camera: 'wrist_right', route: 'wrist-right' },
+  ]
 
   return (
     <div className="page detail-page capture-screen">
@@ -448,14 +456,26 @@ export function CaptureScreen({
       />
       <div className="capture-workspace">
         <section className="capture-video card">
-          <div className="dual-preview">
-            <CameraFeed
-              title="FPV_L"
-              connected={record.cameraConnected && liveActive}
-              src={liveActive ? `/api/camera/preview?t=${previewStamp}` : undefined}
-              note={record.cameraConnected ? '预览未启动' : '无信号'}
-            />
-            <CameraFeed title="FPV_R" connected={false} note="独立右路待接入" />
+          <div className={product === 'Mango' ? 'mango-preview-grid' : 'dual-preview'}>
+            {product === 'Mango' ? mangoPreviews.map(({ title, camera, route }) => (
+              <CameraFeed
+                key={camera}
+                title={title}
+                connected={Boolean(record.cameras?.[camera]) && liveActive}
+                src={liveActive ? `/api/camera/preview/${route}?t=${previewStamp}` : undefined}
+                note={record.cameras?.[camera] ? '预览未启动' : '无信号'}
+              />
+            )) : (
+              <>
+                <CameraFeed
+                  title="FPV_L"
+                  connected={record.cameraConnected && liveActive}
+                  src={liveActive ? `/api/camera/preview?t=${previewStamp}` : undefined}
+                  note={record.cameraConnected ? '预览未启动' : '无信号'}
+                />
+                <CameraFeed title="FPV_R" connected={false} note="独立右路待接入" />
+              </>
+            )}
           </div>
           <div className={`record-timer ${record.recording ? 'active' : ''}`}>
             <span className="record-dot" />
