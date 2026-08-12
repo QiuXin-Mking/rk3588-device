@@ -19,6 +19,7 @@ export type View =
   | 'featured'
   | 'package-download'
   | 'account'
+  | 'product-kit'
 
 const DATA_VIEWS: View[] = ['camera', 'gripper', 'task-claim', 'capture']
 const PROFILE_VIEWS: View[] = [
@@ -34,7 +35,7 @@ const PROFILE_VIEWS: View[] = [
   'package-download',
   'account',
 ]
-const HOME_VIEWS: View[] = ['marketplace', 'featured']
+const HOME_VIEWS: View[] = ['marketplace', 'featured', 'product-kit']
 
 export const tabForView = (view: View): MainTab => {
   if (DATA_VIEWS.includes(view)) return 'data'

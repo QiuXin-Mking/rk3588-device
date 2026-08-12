@@ -24,6 +24,7 @@ export function DeviceShell({
   toast,
   children,
   onSelect,
+  productName,
 }: {
   active: MainTab
   online: boolean
@@ -31,6 +32,7 @@ export function DeviceShell({
   toast: string
   children: ReactNode
   onSelect: (tab: MainTab) => void
+  productName: string
 }) {
   const { locale, localizeNode, t, toggleLocale } = useI18n()
   const [immersive, setImmersive] = useState(
@@ -82,6 +84,7 @@ export function DeviceShell({
       {!immersive && (
         <header className="device-topbar">
           <Brand />
+          <span className="topbar-product-name">产品：{productName}</span>
           <div className="topbar-page-slot" ref={setHeadingPortal} />
           <div className={`device-connection ${online ? 'online' : ''}`}>
             <span className="status-dot" />

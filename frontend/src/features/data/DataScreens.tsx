@@ -1,6 +1,5 @@
 import {
   Activity,
-  BatteryCharging,
   Camera,
   ChevronRight,
   CloudUpload,
@@ -8,31 +7,50 @@ import {
   FileClock,
   FolderOpen,
   Gauge,
-  HardDrive,
   Info,
-  Mic,
   Play,
-  Radio,
   Square,
   Wrench,
+  X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { Navigate, Notify, ScreenCommonProps } from '../../app/model'
-import { api, type DeviceStatus, type FilesResponse, type RecordStatus } from '../../services/deviceApi'
+import type { SelectableProduct } from '../../app/product'
+import { api, type FilesResponse, type RecordStatus } from '../../services/deviceApi'
 import { formatTime } from '../../shared/format'
 import {
   CameraFeed,
   EmptyState,
-  HandSkeleton,
   PageHeader,
   RecordingRow,
-  SensorBadge,
 } from '../../shared/ui/DevicePrimitives'
 import { TouchChoice } from '../../shared/ui/TouchChoice'
 
-export function RealtimeScreen({ status, record, go }: ScreenCommonProps) {
-  const left = Boolean(record.gloveSides?.left || status.wiredGloves?.left)
-  const right = Boolean(record.gloveSides?.right || status.wiredGloves?.right)
+export function RealtimeScreen({ status, record, go, product }: ScreenCommonProps & { product: SelectableProduct }) {
+  const [selectedDevice, setSelectedDevice] = useState<ProductDeviceId | null>(null)
+  const leftWireless = Boolean(record.gloveSides?.left)
+  const rightWireless = Boolean(record.gloveSides?.right)
+  const leftUsb = Boolean(status.wiredGloves?.left)
+  const rightUsb = Boolean(status.wiredGloves?.right)
+  const egoUsb = record.cameraConnected
+  const egoStereo = record.cameraConnected || cameraIsOnline(record, ['stereo', 'ego_h_stereo', 'head_stereo'])
+  const egoFour = cameraIsOnline(record, ['four', 'quad', 'ego_h_four', 'head_four'])
+  const leftWristUsb = cameraIsOnline(record, ['ego_w_left', 'ego_w_l', 'wrist_left', 'jhh2_left'])
+  const rightWristUsb = cameraIsOnline(record, ['ego_w_right', 'ego_w_r', 'wrist_right', 'jhh2_right'])
+  const productDevices: ProductDeviceStatus[] = product === 'Banana'
+    ? [
+        { id: 'UMI_Fingers_L', name: '左指尖夹爪', states: [['无线', leftWireless], ['USB', leftUsb]] },
+        { id: 'UMI_Fingers_R', name: '右指尖夹爪', states: [['无线', rightWireless], ['USB', rightUsb]] },
+        { id: 'UMI_Grippers_L', name: '左板机夹爪', states: [], unavailable: true },
+        { id: 'UMI_Grippers_R', name: '右板机夹爪', states: [], unavailable: true },
+        { id: 'Ego_H', name: '头部 Ego', states: [['USB', egoUsb], ['双目', egoStereo], ['四目', egoFour]] },
+        { id: 'Suits', name: '手套', states: [], unavailable: true },
+      ]
+    : [
+        { id: 'Ego_H', name: '头部 Ego', states: [['USB', egoUsb], ['双目', egoStereo], ['四目', egoFour]] },
+        { id: 'Ego_W_L', name: '左腕部 Ego', states: [['USB', leftWristUsb]] },
+        { id: 'Ego_W_R', name: '右腕部 Ego', states: [['USB', rightWristUsb]] },
+      ]
 
   return (
     <div className="page realtime-screen">
@@ -41,41 +59,39 @@ export function RealtimeScreen({ status, record, go }: ScreenCommonProps) {
         subtitle="设备与传感器运行状态"
       />
       <div className="realtime-workspace">
-        <section className="hand-stage card">
+        <section className="device-status-panel card">
           <div className="card-topline">
             <div>
-              <span className="eyebrow">HAND TRACKING</span>
-              <h2>手部追踪</h2>
+              <span className="eyebrow">DEVICE STATUS</span>
+              <h2>设备状态</h2>
             </div>
-            <span className="muted">
-              {left && right ? '双手已连接' : left || right ? '单手已连接' : '等待手套'}
-            </span>
+            <span className="muted">点击设备查看连接和数据详情</span>
           </div>
-          <HandPair left={left} right={right} />
-          <div className="hand-status-row">
-            <SensorBadge label="左手" ok={left} />
-            <SensorBadge label="右手" ok={right} />
+          <div className="device-status-list">
+            {productDevices.map(device => (
+              <DeviceStatusCard
+                key={device.id}
+                {...device}
+                onClick={() => setSelectedDevice(device.id)}
+              />
+            ))}
           </div>
-          <TopicStrip status={status} record={record} />
         </section>
 
         <aside className="realtime-control">
-          <SystemSummary status={status} record={record} />
-          <div className="sensor-actions">
-            <button className="menu-card" onClick={() => go('camera')}>
-              <span className="menu-icon blue"><Camera /></span>
-              <span>
-                <strong>相机</strong>
-                <small>{record.cameraConnected ? '相机已连接' : '未检测到相机'}</small>
-              </span>
-              <ChevronRight />
-            </button>
-            <button className="menu-card" onClick={() => go('gripper')}>
-              <span className="menu-icon violet"><Gauge /></span>
-              <span><strong>夹爪角度</strong><small>接口待接入</small></span>
-              <ChevronRight />
-            </button>
-          </div>
+          <section className="camera-channel-panel card">
+            <div className="card-topline">
+              <div><span className="eyebrow">CAMERA</span><h2>相机通道</h2></div>
+              <button className="section-link" onClick={() => go('camera')}>查看画面<ChevronRight /></button>
+            </div>
+            <div className="camera-channel-grid">
+              <CameraChannel label="头部双目" online={egoStereo} />
+              <CameraChannel label="头部四目" online={egoFour} />
+              <CameraChannel label="左手双目" online={leftUsb || leftWireless} />
+              <CameraChannel label="右手双目" online={rightUsb || rightWireless} />
+            </div>
+            <p className="pending-note">Y8 展示范围待产品确认</p>
+          </section>
           <div className="primary-actions">
             <button onClick={() => go('task-claim')}>
               <FileClock />
@@ -88,44 +104,121 @@ export function RealtimeScreen({ status, record, go }: ScreenCommonProps) {
           </div>
         </aside>
       </div>
+      {selectedDevice && (
+        <DeviceDetailDialog
+          id={selectedDevice}
+          states={selectedDevice === 'Ego_H'
+            ? [['USB 连接', egoUsb], ['双目状态', egoStereo], ['四目状态', egoFour]]
+            : selectedDevice === 'UMI_Fingers_L'
+              ? [['无线连接', leftWireless], ['USB 连接', leftUsb]]
+              : selectedDevice === 'UMI_Fingers_R'
+                ? [['无线连接', rightWireless], ['USB 连接', rightUsb]]
+                : selectedDevice === 'Ego_W_L'
+                  ? [['USB 连接', leftWristUsb]]
+                  : [['USB 连接', rightWristUsb]]}
+          onClose={() => setSelectedDevice(null)}
+        />
+      )}
     </div>
   )
 }
 
-function HandPair({ left, right }: { left: boolean; right: boolean }) {
+type ProductDeviceId =
+  | 'UMI_Fingers_L'
+  | 'UMI_Fingers_R'
+  | 'UMI_Grippers_L'
+  | 'UMI_Grippers_R'
+  | 'Ego_H'
+  | 'Ego_W_L'
+  | 'Ego_W_R'
+  | 'Suits'
+
+type ProductDeviceStatus = {
+  id: ProductDeviceId
+  name: string
+  states: Array<[string, boolean]>
+  unavailable?: boolean
+}
+
+function cameraIsOnline(record: RecordStatus, keys: string[]) {
+  return keys.some((key) => Boolean(record.cameras?.[key]))
+}
+
+function DeviceStatusCard({
+  id,
+  name,
+  states,
+  unavailable = false,
+  onClick,
+}: ProductDeviceStatus & {
+  onClick: () => void
+}) {
   return (
-    <div className="hand-pair" aria-label="左右手状态">
-      <HandSkeleton flipped active={left} />
-      <div className="hand-center"><Activity /><span>LIVE</span></div>
-      <HandSkeleton active={right} />
+    <button className={`device-status-card ${unavailable ? 'is-unavailable' : ''}`} disabled={unavailable} onClick={onClick}>
+      <span className="device-status-icon"><Activity /></span>
+      <span className="device-status-copy"><strong>{id}</strong><small>{name}</small></span>
+      <span className="device-state-pills">
+        {unavailable && <span>未开发</span>}
+        {!unavailable && states.map(([label, online]) => (
+          <span className={online ? 'online' : ''} key={label}>
+            <span className="status-dot" />{label} · {online ? '在线' : '离线'}
+          </span>
+        ))}
+      </span>
+      {!unavailable && <ChevronRight />}
+    </button>
+  )
+}
+
+function CameraChannel({ label, online }: { label: string; online: boolean }) {
+  return (
+    <div className={`camera-channel ${online ? 'online' : ''}`}>
+      <Camera />
+      <span><strong>{label}</strong><small>{online ? '在线' : '离线'}</small></span>
+      <span className="status-dot" />
     </div>
   )
 }
 
-function SystemSummary({ status, record }: { status: DeviceStatus; record: RecordStatus }) {
-  return (
-    <div className="system-summary card">
-      <div><BatteryCharging /><span>电量</span><strong>{status.battery.pct}%</strong></div>
-      <div><HardDrive /><span>存储</span><strong>{status.storage.pct}%</strong></div>
-      <div><Mic /><span>麦克风</span><strong>{record.micConnected ? '在线' : '离线'}</strong></div>
-    </div>
-  )
-}
+function DeviceDetailDialog({
+  id,
+  states,
+  onClose,
+}: {
+  id: ProductDeviceId
+  states: Array<[string, boolean]>
+  onClose: () => void
+}) {
+  const streams = id === 'Ego_H'
+    ? [
+        ['双目 MKV', '4000 × 1200'],
+        ['双目 Y8', '4000 × 1200'],
+        ['四目 Y8', '3104 × 480'],
+      ]
+    : id === 'Ego_W_L' || id === 'Ego_W_R'
+      ? [['设备数据流', 'MKV · Y8 · IMU']]
+      : [['双目 MKV', '3840 × 1200']]
 
-function TopicStrip({ status, record }: { status: DeviceStatus; record: RecordStatus }) {
-  const onlineCount = [
-    record.cameraConnected,
-    record.gloveSides?.left,
-    record.gloveSides?.right,
-    status.storage.total > 0,
-  ].filter(Boolean).length
-
   return (
-    <div className="topic-strip">
-      <Radio />
-      <span>数据通道</span>
-      <strong>{onlineCount} / 4 在线</strong>
-      <small>相机 · 左手 · 右手 · 存储</small>
+    <div className="detail-overlay" role="dialog" aria-modal="true" aria-label={`${id} 设备详情`}>
+      <section className="device-detail card">
+        <button className="icon-button close-detail" onClick={onClose} aria-label="关闭详情"><X /></button>
+        <div className="device-detail-heading">
+          <span className="eyebrow">DEVICE DETAIL</span>
+          <h2>{id}</h2>
+          <p>设备连接状态与数据规格</p>
+        </div>
+        <div className="device-detail-states">
+          {states.map(([label, online]) => (
+            <div key={label}><span>{label}</span><strong className={online ? 'online' : ''}>{online ? '在线' : '离线'}</strong></div>
+          ))}
+        </div>
+        <div className="device-detail-streams">
+          {streams.map(([name, resolution]) => (
+            <div key={name}><Camera /><span><strong>{name}</strong><small>分辨率</small></span><b>{resolution}</b></div>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }
@@ -156,15 +249,15 @@ export function CameraScreen({ record, back }: { record: RecordStatus; back: () 
         subtitle={record.cameraConnected ? '设备实时画面' : '等待相机接入'}
         back={back}
       />
-      <div className="camera-grid">
+      <div className="camera-grid product-camera-grid">
         <CameraFeed
-          title="FPV"
+          title="头部双目"
           connected={record.cameraConnected}
           src={`/api/camera/preview?t=${stamp}`}
-          large
         />
-        <CameraFeed title="左手" connected={false} note="独立视频通道待接入" />
-        <CameraFeed title="右手" connected={false} note="独立视频通道待接入" />
+        <CameraFeed title="头部四目" connected={cameraIsOnline(record, ['four', 'quad', 'ego_h_four', 'head_four'])} note="四目视频通道待接入" />
+        <CameraFeed title="左手双目" connected={false} note="左手视频通道待接入" />
+        <CameraFeed title="右手双目" connected={false} note="右手视频通道待接入" />
       </div>
     </div>
   )

@@ -7,13 +7,18 @@ import {
 } from './app/model'
 import { tabForView, type MainTab, type View } from './app/navigation'
 import {
+  loadSelectedProduct,
+  saveSelectedProduct,
+  type SelectableProduct,
+} from './app/product'
+import {
   CameraScreen,
   CaptureScreen,
   GripperScreen,
   RealtimeScreen,
   TaskClaimScreen,
 } from './features/data/DataScreens'
-import { HomeScreen } from './features/home/HomeScreen'
+import { HomeScreen, ProductKitScreen } from './features/home/HomeScreen'
 import {
   AccountScreen,
   FeaturedScreen,
@@ -41,7 +46,8 @@ import {
 } from './services/deviceApi'
 
 function App() {
-  const [view, setView] = useState<View>('data')
+  const [product, setProduct] = useState<SelectableProduct | null>(loadSelectedProduct)
+  const [view, setView] = useState<View>(() => product ? 'product-kit' : 'home')
   const [history, setHistory] = useState<View[]>([])
   const [status, setStatus] = useState<DeviceStatus>(FALLBACK_STATUS)
   const [record, setRecord] = useState<RecordStatus>(FALLBACK_RECORD)
@@ -123,7 +129,13 @@ function App() {
 
   const selectTab = (tab: MainTab) => {
     setHistory([])
-    setView(tab)
+    setView(tab === 'home' && product ? 'product-kit' : tab)
+  }
+
+  const selectProduct = (next: SelectableProduct) => {
+    setProduct(next)
+    saveSelectedProduct(next)
+    go('product-kit')
   }
 
   const toggleRecord = async () => {
@@ -155,9 +167,11 @@ function App() {
   const screen = (() => {
     switch (view) {
       case 'home':
-        return <HomeScreen {...common} />
+        return <HomeScreen {...common} onSelectProduct={selectProduct} />
+      case 'product-kit':
+        return <ProductKitScreen product={product ?? 'Banana'} back={back} go={go} />
       case 'data':
-        return <RealtimeScreen {...common} />
+        return <RealtimeScreen {...common} product={product ?? 'Banana'} />
       case 'records':
         return <RecordsScreen {...common} />
       case 'profile':
@@ -230,6 +244,7 @@ function App() {
       status={status}
       toast={toast}
       onSelect={selectTab}
+      productName={product ?? '产品选择'}
     >
       {screen}
     </DeviceShell>

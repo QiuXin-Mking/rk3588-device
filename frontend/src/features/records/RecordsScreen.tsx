@@ -10,7 +10,6 @@ import {
 import { useState } from 'react'
 import type { ScreenCommonProps } from '../../app/model'
 import { api, type Recording } from '../../services/deviceApi'
-import { formatBytes } from '../../shared/format'
 import {
   EmptyState,
   PageHeader,
@@ -43,23 +42,13 @@ export function RecordsScreen({ files, refreshFiles, notify }: ScreenCommonProps
       <PageHeader
         title="采集记录"
         subtitle={`${files.files.length} 条本地记录`}
-        action={
-          files.externalDisk && (
-            <span className="live-badge online"><HardDrive /> 外接存储</span>
-          )
-        }
       />
-      <div className="records-summary">
+      <div className="records-summary" role="region" aria-label="记录汇总">
         <SummaryTile icon={<FolderOpen />} label="记录数量" value={String(files.files.length)} />
         <SummaryTile
           icon={<Database />}
           label="数据总量"
-          value={formatBytes(files.files.reduce((sum, file) => sum + file.size, 0))}
-        />
-        <SummaryTile
-          icon={<HardDrive />}
-          label="外接存储"
-          value={files.externalDisk ? formatBytes(files.externalDisk.free) : '未连接'}
+          value={formatRecordTotal(files.files.reduce((sum, file) => sum + file.size, 0))}
         />
       </div>
       <section className="records-card card local-scroll">
@@ -156,6 +145,18 @@ export function RecordsScreen({ files, refreshFiles, notify }: ScreenCommonProps
       )}
     </div>
   )
+}
+
+export function formatRecordTotal(bytes: number) {
+  const units = [
+    { label: 'TB', size: 1024 ** 4 },
+    { label: 'GB', size: 1024 ** 3 },
+    { label: 'MB', size: 1024 ** 2 },
+  ]
+  const unit = units.find(item => bytes >= item.size) ?? units[2]
+  const value = bytes / unit.size
+  const digits = Number.isInteger(value) ? 0 : 1
+  return `${value.toFixed(digits)} ${unit.label}`
 }
 
 function SummaryTile({

@@ -4,7 +4,6 @@ import {
   CloudDownload,
   CloudUpload,
   Hand,
-  Package,
   Play,
   ShieldCheck,
   UserRound,
@@ -15,24 +14,26 @@ import { PageHeader } from '../../shared/ui/DevicePrimitives'
 export function MarketplaceScreen({ back }: { back: () => void }) {
   return (
     <div className="page detail-page expansion-screen">
-      <PageHeader title="设备商城" subtitle="设备与采集套件" back={back} />
+      <PageHeader title="设备展示" subtitle="仅展示本机支持设备" back={back} />
       <div className="catalog-grid">
         <CatalogCard
-          icon={<Hand />}
-          name="HSuit"
-          description="轻量化手部动作捕捉套件"
-          tags={['手部追踪', '无线连接', '任务采集']}
+          icon={<Activity />}
+          name="Ego_H"
+          description="头部 Ego 采集设备"
+          tags={['USB', '双目', '四目']}
         />
         <CatalogCard
-          icon={<Activity />}
-          name="iSuit"
-          description="相机、手套与多传感器一体化采集套件"
-          tags={['双目相机', '多传感器', '本地记录']}
+          icon={<Hand />}
+          name="UMI_Grippers_L"
+          description="左侧板机夹爪"
+          tags={['展示设备', '暂未开发']}
         />
-      </div>
-      <div className="placeholder-panel expansion-note">
-        <Package />
-        <span>商城下单、价格和库存接口待接入</span>
+        <CatalogCard
+          icon={<Hand />}
+          name="UMI_Grippers_R"
+          description="右侧板机夹爪"
+          tags={['展示设备', '暂未开发']}
+        />
       </div>
     </div>
   )
@@ -58,7 +59,7 @@ function CatalogCard({
         <p>{description}</p>
         <div className="stream-tags">{tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
       </div>
-      <span className="placeholder-chip">展示位</span>
+      <span className="catalog-status"><span className="status-dot" />离线</span>
     </section>
   )
 }
