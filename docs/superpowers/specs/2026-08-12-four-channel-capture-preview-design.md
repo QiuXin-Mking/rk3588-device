@@ -76,6 +76,52 @@ GET /api/camera/preview/wrist-right
 
 为了避免返回上一次请求的旧 JPEG，发请求前删除该通道旧文件，等待本次请求生成的新文件。
 
+## 临时预览 Session 生命周期
+
+`unified_capture` 只有在 session 运行时才创建四路视频采集线程，因此 device-ui 的实时预览必须启动一个临时采集 session。
+
+### 启动预览
+
+1. 在 `_recBusy` 保护内读取 `CAPTURE_DATA_DIR` 下现有的 `session_NNN` 目录集合。
+2. 向 unified_capture 发送 `start`。
+3. 轮询 `status`，直到 `running=true`。
+4. 再次读取 session 集合，要求相对启动前恰好新增一个目录。
+5. 新目录必须满足：
+   - 直接位于 `CAPTURE_DATA_DIR` 下；
+   - basename 严格匹配 `^session_[0-9]{3,}$`；
+   - `realpath` 后仍位于 `CAPTURE_DATA_DIR` 内。
+6. 在新目录写入空标记文件 `.device-ui-preview`。
+7. 将该目录保存为进程内 `_capturePreviewDir`，并返回预览启动成功。
+
+若 session 未启动、没有新增目录或新增目录不止一个，则返回失败；未能唯一识别的目录不得自动删除。
+
+### 停止预览
+
+1. 向 unified_capture 发送 `stop` 并等待 `running=false`。
+2. 仅当 `_capturePreviewDir` 同时通过以下校验时删除：
+   - 位于 `CAPTURE_DATA_DIR` 直接子目录；
+   - basename 匹配 `session_NNN`；
+   - 目录内存在 `.device-ui-preview` 标记。
+3. 删除目标必须使用已经校验的绝对路径，不允许 glob、未解析变量或宽泛目录。
+4. 清空 `_capturePreviewDir`。
+
+### 提升为正式录制
+
+用户在预览中点击“开始录制”时：
+
+1. 不停止、不重启 unified_capture，保持四路连续采集。
+2. 删除 `_capturePreviewDir/.device-ui-preview` 标记。
+3. 清空 `_capturePreviewDir`，使当前 session 立即转为正式记录。
+4. 返回 `{ ok: true, promoted: true }`。
+
+正式录制停止继续走现有 `captureCtl('stop')`。没有标记的 session 永远不得由预览清理逻辑删除。
+
+### 重启与异常恢复
+
+- 文件列表扫描忽略含 `.device-ui-preview` 的临时 session，避免预览出现在“记录”页面。
+- device-ui 进程重启后不自动删除任何遗留标记目录；自动推断并删除存在误删风险。
+- 遗留临时目录由运维明确检查后处理，本次不增加开机清理。
+
 ## 前端
 
 `CaptureScreen` 接收当前产品，并在 Mango 下将预览区改成 2×2 四张卡片：
@@ -105,6 +151,11 @@ Banana 本次不新增硬件映射，继续保留其现有预览兼容行为，�
 - 未启动预览、非法路径和生成超时返回正确状态。
 - Mango `CaptureScreen` 显示四个正确名称且不再出现 `FPV_L / FPV_R`。
 - 四个预览卡片使用四个不同 URL。
+- 预览启动只接受唯一新增且路径合法的 `session_NNN`，并创建标记。
+- 预览停止只删除带标记的精确 session 目录。
+- 正式录制提升只移除标记并保留目录。
+- 记录列表忽略带 `.device-ui-preview` 标记的 session。
+- 多个新增目录、路径越界或标记缺失时拒绝删除。
 
 ## 硬件验收
 
@@ -116,6 +167,7 @@ Banana 本次不新增硬件映射，继续保留其现有预览兼容行为，�
 4. 对四张 JPEG 计算哈希；不得全部相同。
 5. 在设备屏幕确认四张卡片名称正确、画面不串路、停止预览后不再刷新。
 6. 执行一次短录制，确认四路预览改动未破坏录制启动与停止。
+7. 确认停止预览后临时 session 被删除；预览提升录制后对应 session 保留且出现在记录页面。
 
 ## 不在本次范围
 
