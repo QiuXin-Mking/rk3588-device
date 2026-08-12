@@ -177,7 +177,7 @@ function App() {
       case 'profile':
         return <ProfileScreen {...common} />
       case 'camera':
-        return <CameraScreen record={record} back={back} />
+        return <CameraScreen record={record} product={product ?? 'Banana'} back={back} />
       case 'gripper':
         return <GripperScreen back={back} />
       case 'task-claim':

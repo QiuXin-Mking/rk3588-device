@@ -63,5 +63,23 @@ describe('RealtimeScreen', () => {
     expect(screen.getByRole('button', { name: /Ego_W_R/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /UMI_Fingers_L/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /UMI_Fingers_R/ })).not.toBeInTheDocument()
+    for (const channel of ['头部双目', '头部四目', '左腕部单目', '右腕部单目']) {
+      expect(screen.getByText(channel)).toBeInTheDocument()
+    }
+    expect(screen.queryByText('左手双目')).not.toBeInTheDocument()
+    expect(screen.queryByText('右手双目')).not.toBeInTheDocument()
+  })
+
+  it('uses Mango wrist camera states for the monocular channels', () => {
+    const record = {
+      ...FALLBACK_RECORD,
+      cameras: { ego_w_left: true, ego_w_right: true },
+    }
+    render(<RealtimeScreen {...props} record={record} product="Mango" />)
+
+    for (const label of ['左腕部单目', '右腕部单目']) {
+      const channel = screen.getByText(label).closest('.camera-channel')
+      expect(channel).toHaveTextContent('在线')
+    }
   })
 })

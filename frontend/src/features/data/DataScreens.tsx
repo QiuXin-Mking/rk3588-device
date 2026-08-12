@@ -37,6 +37,12 @@ export function RealtimeScreen({ status, record, go, product }: ScreenCommonProp
   const egoFour = cameraIsOnline(record, ['four', 'quad', 'ego_h_four', 'head_four'])
   const leftWristUsb = cameraIsOnline(record, ['ego_w_left', 'ego_w_l', 'wrist_left', 'jhh2_left'])
   const rightWristUsb = cameraIsOnline(record, ['ego_w_right', 'ego_w_r', 'wrist_right', 'jhh2_right'])
+  const sideChannels = getSideCameraChannels(product, {
+    leftHand: leftUsb || leftWireless,
+    rightHand: rightUsb || rightWireless,
+    leftWrist: leftWristUsb,
+    rightWrist: rightWristUsb,
+  })
   const productDevices: ProductDeviceStatus[] = product === 'Banana'
     ? [
         { id: 'UMI_Fingers_L', name: '左指尖夹爪', states: [['无线', leftWireless], ['USB', leftUsb]] },
@@ -87,8 +93,7 @@ export function RealtimeScreen({ status, record, go, product }: ScreenCommonProp
             <div className="camera-channel-grid">
               <CameraChannel label="头部双目" online={egoStereo} />
               <CameraChannel label="头部四目" online={egoFour} />
-              <CameraChannel label="左手双目" online={leftUsb || leftWireless} />
-              <CameraChannel label="右手双目" online={rightUsb || rightWireless} />
+              {sideChannels.map(channel => <CameraChannel key={channel.label} {...channel} />)}
             </div>
             <p className="pending-note">Y8 展示范围待产品确认</p>
           </section>
@@ -142,6 +147,21 @@ type ProductDeviceStatus = {
 
 function cameraIsOnline(record: RecordStatus, keys: string[]) {
   return keys.some((key) => Boolean(record.cameras?.[key]))
+}
+
+function getSideCameraChannels(
+  product: SelectableProduct,
+  states: { leftHand: boolean; rightHand: boolean; leftWrist: boolean; rightWrist: boolean },
+) {
+  return product === 'Mango'
+    ? [
+        { label: '左腕部单目', online: states.leftWrist },
+        { label: '右腕部单目', online: states.rightWrist },
+      ]
+    : [
+        { label: '左手双目', online: states.leftHand },
+        { label: '右手双目', online: states.rightHand },
+      ]
 }
 
 function DeviceStatusCard({
@@ -223,10 +243,16 @@ function DeviceDetailDialog({
   )
 }
 
-export function CameraScreen({ record, back }: { record: RecordStatus; back: () => void }) {
+export function CameraScreen({ record, product, back }: { record: RecordStatus; product: SelectableProduct; back: () => void }) {
   const [stamp, setStamp] = useState(Date.now())
   const recordingRef = useRef(record.recording)
   recordingRef.current = record.recording
+  const sideChannels = getSideCameraChannels(product, {
+    leftHand: Boolean(record.gloveSides?.left),
+    rightHand: Boolean(record.gloveSides?.right),
+    leftWrist: cameraIsOnline(record, ['ego_w_left', 'ego_w_l', 'wrist_left', 'jhh2_left']),
+    rightWrist: cameraIsOnline(record, ['ego_w_right', 'ego_w_r', 'wrist_right', 'jhh2_right']),
+  })
 
   useEffect(() => {
     if (!record.cameraConnected) return
@@ -256,8 +282,14 @@ export function CameraScreen({ record, back }: { record: RecordStatus; back: () 
           src={`/api/camera/preview?t=${stamp}`}
         />
         <CameraFeed title="头部四目" connected={cameraIsOnline(record, ['four', 'quad', 'ego_h_four', 'head_four'])} note="四目视频通道待接入" />
-        <CameraFeed title="左手双目" connected={false} note="左手视频通道待接入" />
-        <CameraFeed title="右手双目" connected={false} note="右手视频通道待接入" />
+        {sideChannels.map(channel => (
+          <CameraFeed
+            key={channel.label}
+            title={channel.label}
+            connected={channel.online}
+            note={`${channel.label}视频通道待接入`}
+          />
+        ))}
       </div>
     </div>
   )
