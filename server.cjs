@@ -35,6 +35,7 @@ const path  = require('path');
 const { exec, execFile, spawn } = require('child_process');
 const url   = require('url');
 const net   = require('net');
+const { createPreviewController } = require('./preview-control.cjs');
 
 const PORT       = parseInt(process.env.PORT || '8080', 10);
 const STATIC_DIR = path.join(__dirname, 'static');
@@ -1117,6 +1118,7 @@ function stereoCtl(cmd, timeoutMs = 8000) {
 // connection pattern as stereoCtl, so we never hold the socket open and
 // never create extra threads (critical: TSTC/MPP break on extra pthreads).
 const CAPTURE_SOCK = '/tmp/unified_capture.sock';
+let _capturePreviewSession = false;
 
 function captureCtl(cmd, timeoutMs = 12000) {
   return new Promise((resolve) => {
@@ -1130,6 +1132,14 @@ function captureCtl(cmd, timeoutMs = 12000) {
     c.on('error', (e) => { clearTimeout(to); finish({ ok: false, error: 'unreachable' }); });
   });
 }
+
+const capturePreview = createPreviewController({
+  fs,
+  captureCtl,
+  captureRoot: RECORD_DIR,
+  previewRoot: '/tmp',
+  waitFor: predicate => waitFor(predicate, 40, 100),
+});
 
 // True when unified_capture is the active camera backend (its socket is up
 // and responding). This is mutually exclusive with stereoActive() — the two
@@ -1323,7 +1333,14 @@ async function apiRecordStatus(req, res) {
 async function apiLiveStart(req, res) {
   // unified_capture: arm the preview flag; the UI then polls /api/camera/preview
   // which requests a JPEG frame from the capture daemon on demand.
-  if (await captureActive()) { _stereoPreview = true; return json(res, { ok: true, capture: true }); }
+  if (await captureActive()) {
+    try {
+      await capturePreview.start();
+      _capturePreviewSession = true;
+      _stereoPreview = true;
+      return json(res, { ok: true, capture: true });
+    } catch (e) { return json(res, { ok: false, error: e.message }); }
+  }
   // Stereo cam streams on demand, so no throwaway recording is needed - just
   // arm the preview flag; the UI then polls /api/camera/preview, which serves a
   // live frame straight from the daemon (the daemon owns /dev/video0).
@@ -1348,7 +1365,14 @@ async function apiLiveStart(req, res) {
 // TODO(v0.2): POST /api/camera/live/stop — 停止实时预览，清理丢弃录制
 async function apiLiveStop(req, res) {
   // unified_capture: just disarm the preview flag (no throwaway recording to clean up)
-  if (await captureActive()) { _stereoPreview = false; return json(res, { ok: true, capture: true }); }
+  if (await captureActive()) {
+    try {
+      if (_capturePreviewSession) await capturePreview.stop();
+      _capturePreviewSession = false;
+      _stereoPreview = false;
+      return json(res, { ok: true, capture: true });
+    } catch (e) { return json(res, { ok: false, error: e.message }); }
+  }
   if (await stereoActive()) { _stereoPreview = false; return json(res, { ok: true, stereo: true }); }
   if (_recBusy) return json(res, { ok: false, busy: true });
   _recBusy = true;
@@ -1373,6 +1397,12 @@ async function apiRecordToggle(req, res) {
     try {
       const st = await captureCtl('status', 5000);
       if (!st.ok) return json(res, { ok: false, error: 'capture unreachable' });
+      if (st.running && _capturePreviewSession) {
+        await capturePreview.promote();
+        _capturePreviewSession = false;
+        _stereoPreview = false;
+        return json(res, { ok: true, recording: true, promoted: true });
+      }
       if (st.running) {
         const r = await captureCtl('stop', 15000);
         _maybeSkipPostCapture();
@@ -1487,6 +1517,20 @@ async function apiCameraPreview(req, res) {
   res.end('no preview available');
 }
 
+async function apiCaptureChannelPreview(req, res, channel) {
+  if (!await captureActive() || (!_stereoPreview && !_capturePreviewSession)) {
+    res.writeHead(503); return res.end('preview not started');
+  }
+  try {
+    const file = await capturePreview.requestFrame(channel);
+    const data = fs.readFileSync(file);
+    res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': data.length, 'Cache-Control': 'no-store' });
+    return res.end(data);
+  } catch (e) {
+    res.writeHead(503); return res.end(e.message);
+  }
+}
+
 // TODO(v0.2): POST /api/calibrator {action: start|stop|restart} — 控制校准器 systemd 服务
 async function apiCalibrator(req, res) {
   const { action } = await readBody(req);
@@ -1545,6 +1589,9 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/camera/live/start'   && method === 'POST')   return apiLiveStart(req, res);
   if (pathname === '/api/camera/live/stop'    && method === 'POST')   return apiLiveStop(req, res);
   if (pathname === '/api/camera/preview'      && method === 'GET')    return apiCameraPreview(req, res);
+  if (pathname.startsWith('/api/camera/preview/') && method === 'GET') {
+    return apiCaptureChannelPreview(req, res, decodeURIComponent(pathname.slice('/api/camera/preview/'.length)));
+  }
   if (pathname.startsWith('/api/files/')      && method === 'DELETE') {
     return apiFilesDelete(req, res, decodeURIComponent(pathname.slice('/api/files/'.length)));
   }

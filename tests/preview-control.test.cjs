@@ -158,3 +158,42 @@ test('promote removes the marker and preserves the session directory', async t =
   assert.equal(fs.existsSync(started.dir), true);
   assert.equal(fs.existsSync(path.join(started.dir, '.device-ui-preview')), false);
 });
+
+test('requestFrame replaces the stale channel file and sends the channel-addressed command', async t => {
+  const root = temporaryRoot(t);
+  const frames = path.join(root, 'frames');
+  fs.mkdirSync(frames);
+  const output = path.join(frames, 'camera_preview_jhh02.jpg');
+  fs.writeFileSync(output, 'stale');
+  const commands = [];
+  const controller = createPreviewController({
+    fs,
+    captureRoot: root,
+    previewRoot: frames,
+    captureCtl: async command => {
+      commands.push(command);
+      assert.equal(fs.existsSync(output), false);
+      fs.writeFileSync(output, 'fresh-frame');
+      return { ok: true };
+    },
+    waitFor: async predicate => predicate(),
+  });
+
+  const frame = await controller.requestFrame('head-stereo');
+
+  assert.equal(frame, output);
+  assert.deepEqual(commands, [`preview:jhh02:${output}`]);
+  assert.equal(fs.readFileSync(output, 'utf8'), 'fresh-frame');
+});
+
+test('requestFrame rejects an unknown external channel without contacting capture', async t => {
+  const root = temporaryRoot(t);
+  let calls = 0;
+  const controller = fakeController(root, async () => {
+    calls += 1;
+    return { ok: true };
+  });
+
+  await assert.rejects(controller.requestFrame('../jhh02'), /unknown preview channel/i);
+  assert.equal(calls, 0);
+});
