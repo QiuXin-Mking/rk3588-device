@@ -111,7 +111,7 @@ function createPreviewController(deps) {
       if (!dir || !isMarkedPreviewSessionWithFs(fs, dir, captureRoot)) {
         throw new Error('refusing to delete anything except a valid marked preview session');
       }
-      fs.rmSync(dir, { recursive: true });
+      fs.rmdirSync(dir, { recursive: true });
       return { ok: true };
     },
 
