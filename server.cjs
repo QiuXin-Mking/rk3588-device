@@ -1518,7 +1518,8 @@ async function apiCameraPreview(req, res) {
 }
 
 async function apiCaptureChannelPreview(req, res, channel) {
-  if (!await captureActive() || (!_stereoPreview && !_capturePreviewSession)) {
+  const st = await captureCtl('status', 2000);
+  if (!st || !st.ok || !st.running) {
     res.writeHead(503); return res.end('preview not started');
   }
   try {
