@@ -10,8 +10,8 @@
 | --- | --- | --- | --- |
 | 头部双目 | `/api/camera/preview/head-stereo` | `jhh02` | 六目设备中的双目模组 |
 | 头部四目 | `/api/camera/preview/head-four` | `jhh04` | 六目设备中的四目模组 |
-| 左腕部单目 | `/api/camera/preview/wrist-left` | `jhh2_left` | 左腕部 Ego |
-| 右腕部单目 | `/api/camera/preview/wrist-right` | `jhh2_right` | 右腕部 Ego |
+| 左腕部单目 | `/api/camera/preview/wrist-left` | `wrist_left` | 左腕部 Ego |
+| 右腕部单目 | `/api/camera/preview/wrist-right` | `wrist_right` | 右腕部 Ego |
 
 ## unified_capture 协议
 
@@ -27,8 +27,8 @@ preview:<channel>:<absolute-output-path>
 
 - `jhh02`
 - `jhh04`
-- `jhh2_left`
-- `jhh2_right`
+- `wrist_left`
+- `wrist_right`
 
 非法通道、空路径或非绝对路径返回错误，不创建文件。
 
@@ -48,7 +48,7 @@ preview:<absolute-output-path>
 
 - 每个通道最多保留一个最新请求。
 - `VideoFrameProcessor` 使用自身 `camera_name` 领取同名通道请求。
-- `jhh02`、`jhh04`、`jhh2_left`、`jhh2_right` 可并行生成各自 JPEG。
+- `jhh02`、`jhh04`、`wrist_left`、`wrist_right` 可并行生成各自 JPEG。
 - 一个线程不能领取其他通道请求。
 - JPEG 继续先写 `.tmp` 再原子重命名，防止 HTTP 读取半张图片。
 
