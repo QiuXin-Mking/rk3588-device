@@ -545,7 +545,7 @@ async function apiBtDisconnect(req, res) {
 // ── unified_capture file scanning ────────────────────────────────────────
 // Maps the unified_capture session_NNN directory tree to the Recording type
 // that the frontend expects (same fields as the old recording_* scanner).
-const CAPTURE_DATA_DIR = process.env.CAPTURE_DATA_DIR || '/data/capture';
+const CAPTURE_DATA_DIR = process.env.CAPTURE_DATA_DIR || RECORD_DIR;
 
 function scanCaptureSessions(ext) {
   const files = [];
