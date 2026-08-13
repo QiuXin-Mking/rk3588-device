@@ -461,7 +461,7 @@ export function CaptureScreen({
               <CameraFeed
                 key={camera}
                 title={title}
-                connected={Boolean(record.cameras?.[camera]) && liveActive}
+                connected={Boolean(record.cameras?.[camera])}
                 src={liveActive ? `/api/camera/preview/${route}?t=${previewStamp}` : undefined}
                 note={record.cameras?.[camera] ? '预览未启动' : '无信号'}
               />
@@ -469,7 +469,7 @@ export function CaptureScreen({
               <>
                 <CameraFeed
                   title="FPV_L"
-                  connected={record.cameraConnected && liveActive}
+                  connected={record.cameraConnected}
                   src={liveActive ? `/api/camera/preview?t=${previewStamp}` : undefined}
                   note={record.cameraConnected ? '预览未启动' : '无信号'}
                 />
