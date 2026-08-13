@@ -179,7 +179,7 @@ export function CameraFeed({
 }) {
   const [failed, setFailed] = useState(false)
   useEffect(() => {
-    if (connected && src) setFailed(false)
+    if (connected) setFailed(false)
   }, [connected, src])
 
   return (
