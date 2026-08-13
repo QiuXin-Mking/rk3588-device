@@ -33,8 +33,8 @@ export function RealtimeScreen({ status, record, go, product }: ScreenCommonProp
   const leftUsb = Boolean(status.wiredGloves?.left)
   const rightUsb = Boolean(status.wiredGloves?.right)
   const egoUsb = record.cameraConnected
-  const egoStereo = record.cameraConnected || cameraIsOnline(record, ['stereo', 'ego_h_stereo', 'head_stereo'])
-  const egoFour = cameraIsOnline(record, ['four', 'quad', 'ego_h_four', 'head_four'])
+  const egoStereo = cameraIsOnline(record, ['jhh02', 'stereo', 'ego_h_stereo', 'head_stereo'])
+  const egoFour = cameraIsOnline(record, ['jhh04', 'four', 'quad', 'ego_h_four', 'head_four'])
   const leftWristUsb = cameraIsOnline(record, ['ego_w_left', 'ego_w_l', 'wrist_left', 'jhh2_left'])
   const rightWristUsb = cameraIsOnline(record, ['ego_w_right', 'ego_w_r', 'wrist_right', 'jhh2_right'])
   const sideChannels = getSideCameraChannels(product, {
@@ -281,7 +281,7 @@ export function CameraScreen({ record, product, back }: { record: RecordStatus; 
           connected={record.cameraConnected}
           src={`/api/camera/preview?t=${stamp}`}
         />
-        <CameraFeed title="头部四目" connected={cameraIsOnline(record, ['four', 'quad', 'ego_h_four', 'head_four'])} note="四目视频通道待接入" />
+        <CameraFeed title="头部四目" connected={cameraIsOnline(record, ['jhh04', 'four', 'quad', 'ego_h_four', 'head_four'])} note="四目视频通道待接入" />
         {sideChannels.map(channel => (
           <CameraFeed
             key={channel.label}
