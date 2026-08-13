@@ -1292,7 +1292,7 @@ async function getRecordStatus() {
     return {
       cameraConnected: sCam, cameraType: 'stereo', gloveConnected, gloveSides,
       micConnected: mic.connected, micName: mic.name,
-      recording: sRec, previewing: sCam && !sRec && _stereoPreview,
+      recording: sRec && !_capturePreviewSession, previewing: sRec && _capturePreviewSession,
       guidaviewReady: sCam && !sRec,
       currentDir: (st && st.session) || '', stereo: true,
       // unified_capture extensions (non-breaking for frontend)
