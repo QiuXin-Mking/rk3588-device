@@ -1,11 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { DeviceShell } from './app/DeviceShell'
-import {
-  FALLBACK_RECORD,
-  FALLBACK_STATUS,
-  type ScreenCommonProps,
-} from './app/model'
-import { tabForView, type MainTab, type View } from './app/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router'
+import { AppShell } from './app/AppShell'
+import type { ScreenCommonProps } from './app/model'
+import { pathForView, tabForView, viewForPath, type MainTab, type View } from './app/navigation'
 import {
   loadSelectedProduct,
   saveSelectedProduct,
@@ -38,59 +35,33 @@ import {
   WifiScreen,
 } from './features/profile/ProfileScreens'
 import { RecordsScreen } from './features/records/RecordsScreen'
+import { useDeviceRuntime } from './features/device/hooks/useDeviceRuntime'
 import {
-  api,
-  type DeviceStatus,
-  type FilesResponse,
-  type RecordStatus,
-} from './services/deviceApi'
+  CloudSettingsScreen,
+  DiagnosticsScreen,
+  HelpFeedbackScreen,
+  SuiteGuideScreen,
+} from './features/requirements/RequirementScreens'
+import { api } from './services/deviceApi'
+import { useToast } from './shared/hooks/useToast'
 
 function App() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [product, setProduct] = useState<SelectableProduct | null>(loadSelectedProduct)
-  const [view, setView] = useState<View>(() => product ? 'product-kit' : 'home')
-  const [history, setHistory] = useState<View[]>([])
-  const [status, setStatus] = useState<DeviceStatus>(FALLBACK_STATUS)
-  const [record, setRecord] = useState<RecordStatus>(FALLBACK_RECORD)
-  const [files, setFiles] = useState<FilesResponse>({ files: [], root: '', externalDisk: null })
-  const [online, setOnline] = useState(false)
-  const [toast, setToast] = useState('')
-  const [busy, setBusy] = useState(false)
+  const view = viewForPath(location.pathname)
+  const { toast, notify } = useToast()
+  const {
+    status,
+    record,
+    files,
+    online,
+    busy,
+    toggleRecord: toggleRecordRequest,
+    refreshStatus,
+    refreshFiles,
+  } = useDeviceRuntime()
   const calibrationReturnHandled = useRef(false)
-
-  const notify = useCallback((message: string) => {
-    setToast(message)
-    window.setTimeout(() => setToast(''), 2600)
-  }, [])
-
-  const refreshStatus = useCallback(async () => {
-    try {
-      const [nextStatus, nextRecord] = await Promise.all([api.status(), api.recordStatus()])
-      setStatus(nextStatus)
-      setRecord(nextRecord)
-      setOnline(true)
-    } catch {
-      setOnline(false)
-    }
-  }, [])
-
-  const refreshFiles = useCallback(async () => {
-    try {
-      setFiles(await api.files())
-    } catch {
-      // The local shell remains usable while the device service is offline.
-    }
-  }, [])
-
-  useEffect(() => {
-    refreshStatus()
-    refreshFiles()
-    const statusTimer = window.setInterval(refreshStatus, 3000)
-    const fileTimer = window.setInterval(refreshFiles, 5000)
-    return () => {
-      window.clearInterval(statusTimer)
-      window.clearInterval(fileTimer)
-    }
-  }, [refreshFiles, refreshStatus])
 
   useEffect(() => {
     if (calibrationReturnHandled.current) return
@@ -99,37 +70,31 @@ function App() {
     calibrationReturnHandled.current = true
     const side = params.get('side') === 'left' ? 'left' : 'right'
     const transport = params.get('transport') === 'wired' ? 'wired' : 'spp'
-    window.history.replaceState(null, '', window.location.pathname)
-    setView('bluetooth')
-    setHistory([])
+    const cleanUrl = new URL(window.location.href)
+    cleanUrl.searchParams.delete('calDone')
+    cleanUrl.searchParams.delete('side')
+    cleanUrl.searchParams.delete('transport')
+    window.history.replaceState(null, '', cleanUrl)
+    navigate(pathForView('bluetooth'), { replace: true })
     api.calibrateStop(side, transport)
       .then(async () => {
         notify('校准完成，手套采集服务正在恢复')
         await refreshStatus()
       })
       .catch((error) => notify(error instanceof Error ? error.message : '校准服务恢复失败'))
-  }, [notify, refreshStatus])
+  }, [navigate, notify, refreshStatus])
 
-  const go = useCallback(
-    (next: View) => {
-      if (next === view) return
-      setHistory((items) => [...items.slice(-8), view])
-      setView(next)
-    },
-    [view],
-  )
+  const go = (next: View) => {
+    if (next !== view) navigate(pathForView(next), { state: { from: view } })
+  }
 
-  const back = useCallback(() => {
-    setHistory((items) => {
-      const next = [...items]
-      setView(next.pop() ?? tabForView(view))
-      return next
-    })
-  }, [view])
+  const back = () => {
+    const from = (location.state as { from?: View } | null)?.from
+    navigate(pathForView(from ?? tabForView(view)), { replace: true })
+  }
 
   const selectTab = (tab: MainTab) => {
-    setHistory([])
-    setView(tab === 'home' && product ? 'product-kit' : tab)
+    navigate(pathForView(tab === 'home' && product ? 'product-kit' : tab))
   }
 
   const selectProduct = (next: SelectableProduct) => {
@@ -140,16 +105,12 @@ function App() {
 
   const toggleRecord = async () => {
     if (busy) return
-    setBusy(true)
     try {
-      const result = await api.toggleRecord()
+      const result = await toggleRecordRequest()
       if (!result.ok) throw new Error(result.error || '设备未响应')
-      await refreshStatus()
       notify(record.recording ? '录制已停止' : '录制已开始')
     } catch (error) {
       notify(error instanceof Error ? error.message : '录制操作失败')
-    } finally {
-      setBusy(false)
     }
   }
 
@@ -193,10 +154,11 @@ function App() {
             notify={notify}
             refreshStatus={refreshStatus}
             toggleRecord={toggleRecord}
+            go={go}
           />
         )
       case 'device-list':
-        return <DeviceListScreen status={status} record={record} back={back} go={go} />
+        return <DeviceListScreen status={status} record={record} back={back} go={go} refreshStatus={refreshStatus} />
       case 'device-type':
         return <DeviceTypeScreen back={back} go={go} />
       case 'qr-scan':
@@ -224,7 +186,7 @@ function App() {
           />
         )
       case 'settings':
-        return <SettingsScreen status={status} back={back} notify={notify} />
+        return <SettingsScreen status={status} back={back} go={go} notify={notify} />
       case 'about':
         return <AboutScreen back={back} />
       case 'marketplace':
@@ -235,11 +197,19 @@ function App() {
         return <PackageDownloadScreen back={back} notify={notify} />
       case 'account':
         return <AccountScreen back={back} notify={notify} />
+      case 'cloud-settings':
+        return <CloudSettingsScreen back={back} notify={notify} />
+      case 'help-feedback':
+        return <HelpFeedbackScreen back={back} notify={notify} />
+      case 'suite-guide':
+        return <SuiteGuideScreen back={back} notify={notify} />
+      case 'diagnostics':
+        return <DiagnosticsScreen back={back} record={record} />
     }
   })()
 
   return (
-    <DeviceShell
+    <AppShell
       active={tabForView(view)}
       online={online}
       status={status}
@@ -248,7 +218,7 @@ function App() {
       productName={product ?? '产品选择'}
     >
       {screen}
-    </DeviceShell>
+    </AppShell>
   )
 }
 

@@ -1,49 +1,51 @@
 :root {
-  color: #f7f8fb;
-  background: #050608;
-  font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: "Geist Variable", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  color-scheme: dark;
+  color-scheme: light;
 
-  --bg: #050608;
-  --panel: #12151a;
-  --panel-2: #191d24;
-  --panel-3: #222733;
-  --line: rgba(255, 255, 255, 0.1);
-  --muted: #969eac;
-  --blue: #1478ff;
-  --blue-2: #0754bb;
-  --green: #35d07f;
-  --red: #f04444;
-  --violet: #a879ff;
+  /* Compatibility aliases for remaining device-specific visualizations. */
+  --bg: var(--background);
+  --panel: var(--card);
+  --panel-2: var(--secondary);
+  --panel-3: var(--muted);
+  --line: var(--border);
+  --text: var(--foreground);
+  --surface: var(--card);
+  --surface-2: var(--secondary);
+  --surface-3: var(--muted);
 
   /* 5.5-inch / 1920×1080 terminal metrics. */
   --chrome-top: 108px;
   --chrome-bottom: 144px;
   --touch-min: 112px;
   --touch-primary: 128px;
-  --radius: 24px;
+  --device-radius: 24px;
   --gap: 20px;
 
-  --text-xs: 22px;
-  --text-sm: 25px;
-  --text-md: 29px;
-  --text-lg: 34px;
-  --text-xl: 44px;
-  --text-data: 64px;
+  /* Device UI is viewed at arm's length or farther, so its type scale is
+     intentionally larger than the handheld H5 scale. */
+  --device-text-xs: 24px;
+  --device-text-sm: 28px;
+  --device-text-md: 30px;
+  --device-text-lg: 36px;
+  --device-text-xl: 46px;
+  --device-text-data: 64px;
 }
 
-.device-shell[data-theme="light"] {
-  --bg: #eef2f6;
-  --panel: #ffffff;
-  --panel-2: #f7f9fc;
-  --panel-3: #e8edf4;
-  --line: rgba(28, 43, 62, 0.16);
-  --muted: #5f6a78;
-  --blue: #0869e8;
-  --blue-2: #0754bb;
-  --green: #168b54;
-  --red: #cf3030;
-  --violet: #7e4dc7;
+html[data-ui-mode="mobile"] {
+  --chrome-top: 60px;
+  --chrome-bottom: 66px;
+  --touch-min: 48px;
+  --touch-primary: 56px;
+  --device-radius: 18px;
+  --gap: 12px;
+  --device-text-xs: 12px;
+  --device-text-sm: 14px;
+  --device-text-md: 16px;
+  --device-text-lg: 20px;
+  --device-text-xl: 26px;
+  --device-text-data: 36px;
 }
+
+.dark { color-scheme: dark; }

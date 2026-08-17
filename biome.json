@@ -1,0 +1,16 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.8/schema.json",
+  "files": {
+    "includes": ["frontend/src/**/*.{ts,tsx}"]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": "off",
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      }
+    }
+  }
+}

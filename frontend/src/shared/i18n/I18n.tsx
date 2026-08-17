@@ -304,17 +304,12 @@ const EN: Record<string, string> = {
   '实时预览已停止': 'Live preview stopped',
 }
 
-const REPLACEMENTS = Object.entries(EN).sort(([a], [b]) => b.length - a.length)
 const originalText = new WeakMap<Text, string>()
 const originalAttributes = new WeakMap<Element, Record<string, string>>()
 
 function translateText(value: string, locale: Locale) {
   if (locale === 'zh') return value
-  if (EN[value]) return EN[value]
-  return REPLACEMENTS.reduce(
-    (text, [source, target]) => text.split(source).join(target),
-    value,
-  )
+  return EN[value] ?? value
 }
 
 function localizeDom(root: Node, locale: Locale) {
@@ -344,7 +339,7 @@ function localizeDom(root: Node, locale: Locale) {
     originalAttributes.set(root, saved)
   }
 
-  root.childNodes.forEach((child) => localizeDom(child, locale))
+  root.childNodes.forEach((child) => { localizeDom(child, locale) })
 }
 
 type I18nValue = {

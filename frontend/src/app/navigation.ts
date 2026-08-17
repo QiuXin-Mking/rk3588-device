@@ -20,6 +20,10 @@ export type View =
   | 'package-download'
   | 'account'
   | 'product-kit'
+  | 'cloud-settings'
+  | 'help-feedback'
+  | 'suite-guide'
+  | 'diagnostics'
 
 const DATA_VIEWS: View[] = ['camera', 'gripper', 'task-claim', 'capture']
 const PROFILE_VIEWS: View[] = [
@@ -34,6 +38,10 @@ const PROFILE_VIEWS: View[] = [
   'about',
   'package-download',
   'account',
+  'cloud-settings',
+  'help-feedback',
+  'suite-guide',
+  'diagnostics',
 ]
 const HOME_VIEWS: View[] = ['marketplace', 'featured', 'product-kit']
 
@@ -43,3 +51,41 @@ export const tabForView = (view: View): MainTab => {
   if (HOME_VIEWS.includes(view)) return 'home'
   return view as MainTab
 }
+
+export const VIEW_PATHS: Record<View, string> = {
+  home: '/',
+  data: '/data',
+  records: '/records',
+  profile: '/profile',
+  camera: '/data/camera',
+  gripper: '/data/gripper',
+  'task-claim': '/data/tasks/claim',
+  capture: '/data/capture',
+  'device-list': '/profile/devices',
+  'device-type': '/profile/devices/types',
+  'qr-scan': '/profile/devices/scan',
+  'add-device': '/profile/devices/add',
+  'device-info': '/profile/devices/info',
+  wifi: '/profile/wifi',
+  bluetooth: '/profile/bluetooth',
+  settings: '/profile/settings',
+  about: '/profile/about',
+  marketplace: '/marketplace',
+  featured: '/featured',
+  'package-download': '/profile/update',
+  account: '/profile/account',
+  'product-kit': '/products/current',
+  'cloud-settings': '/profile/settings/storage',
+  'help-feedback': '/profile/help',
+  'suite-guide': '/profile/guide',
+  diagnostics: '/profile/diagnostics',
+}
+
+const PATH_VIEWS = new Map(Object.entries(VIEW_PATHS).map(([view, path]) => [path, view as View]))
+
+export function viewForPath(pathname: string): View {
+  const normalized = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname
+  return PATH_VIEWS.get(normalized) ?? 'home'
+}
+
+export const pathForView = (view: View) => VIEW_PATHS[view]

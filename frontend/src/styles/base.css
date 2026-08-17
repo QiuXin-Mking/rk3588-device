@@ -9,16 +9,19 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--background);
 }
 
 body {
   min-width: 320px;
-  background:
-    radial-gradient(circle at 62% -20%, rgba(20, 120, 255, 0.13), transparent 34%),
-    var(--bg);
+  color: var(--foreground);
+  background: var(--background);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+}
+
+html[data-ui-mode="mobile"] body {
+  min-width: 0;
 }
 
 .device-viewport {
@@ -26,7 +29,16 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #000;
+  background: var(--background);
+}
+
+.mobile-viewport {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--background);
 }
 
 .device-canvas {
@@ -61,103 +73,34 @@ svg {
   flex: 0 0 auto;
 }
 
-.card {
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: linear-gradient(145deg, rgba(24, 28, 35, 0.98), rgba(14, 17, 22, 0.98));
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.18);
+/* Cross-page contracts that cannot live on a single routed component. */
+.page {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+html[data-ui-mode="mobile"] .page {
+  height: auto;
+  min-height: 100%;
+  gap: 12px;
+  overflow: visible;
 }
 
 .eyebrow {
-  color: #65a6ff;
-  font-size: var(--text-xs);
+  color: var(--primary);
+  font-size: var(--device-text-xs);
   font-weight: 750;
   letter-spacing: 2px;
 }
 
-.muted {
-  color: var(--muted);
-  font-size: var(--text-sm);
-}
-
-.status-dot {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #59606c;
-  box-shadow: 0 0 0 5px rgba(85, 91, 103, 0.12);
-}
-
-.online .status-dot,
-.sensor-badge.ok .status-dot,
-.device-health .status-dot,
-.device-row small .status-dot {
-  background: var(--green);
-  box-shadow: 0 0 0 5px rgba(53, 208, 127, 0.14), 0 0 16px rgba(53, 208, 127, 0.4);
-}
-
-.primary-button,
-.secondary-button,
-.danger-button,
-.upload-button {
-  display: inline-flex;
-  min-height: var(--touch-min);
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 0 34px;
-  border-radius: 20px;
-  font-size: var(--text-md);
-  font-weight: 700;
-}
-
-.primary-button {
-  border: 1px solid #3c91ff;
-  color: #fff;
-  background: linear-gradient(180deg, #167cff, #0756bd);
-  box-shadow: 0 12px 30px rgba(20, 120, 255, 0.24);
-}
-
-.secondary-button {
-  border: 1px solid var(--line);
-  color: #e7ebf1;
-  background: var(--panel-3);
-}
-
-.danger-button {
-  border: 1px solid rgba(240, 68, 68, 0.35);
-  color: #ffaaaa;
-  background: rgba(240, 68, 68, 0.12);
-}
-
-.icon-button {
-  display: grid;
-  width: 96px;
-  height: 96px;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  color: #dce2eb;
-  background: var(--panel-2);
-}
-
-.icon-button svg {
-  width: 38px;
-  height: 38px;
-}
-
-.placeholder-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 52px;
-  padding: 0 18px;
-  border-radius: 999px;
-  color: #aab1bd;
-  background: rgba(255, 255, 255, 0.055);
-  font-size: var(--text-xs);
+html[data-ui-mode="mobile"] .eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.2px;
 }
 
 .local-scroll {
@@ -167,25 +110,15 @@ svg {
   scrollbar-gutter: stable;
 }
 
-.local-scroll::-webkit-scrollbar,
-.choice-options::-webkit-scrollbar {
+.local-scroll::-webkit-scrollbar {
   width: 18px;
 }
 
-.local-scroll::-webkit-scrollbar-thumb,
-.choice-options::-webkit-scrollbar-thumb {
+.local-scroll::-webkit-scrollbar-thumb {
   border: 5px solid transparent;
   border-radius: 20px;
-  background: #49515e;
+  background: var(--muted-foreground);
   background-clip: padding-box;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.spin {
-  animation: spin 0.8s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

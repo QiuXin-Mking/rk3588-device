@@ -86,19 +86,45 @@ export type BluetoothDevice = {
   paired: boolean
 }
 
+export class DeviceApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly path: string,
+  ) {
+    super(message)
+    this.name = 'DeviceApiError'
+  }
+}
+
+const REQUEST_TIMEOUT_MS = 12_000
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const response = await fetch(path, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  let response: Response
+  try {
+    response = await fetch(path, {
+      method,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new DeviceApiError('设备响应超时', 0, path)
+    }
+    throw error
+  } finally {
+    window.clearTimeout(timeout)
+  }
 
   const text = await response.text()
   let data: unknown = {}
   try {
     data = text ? JSON.parse(text) : {}
   } catch {
-    throw new Error(text || `请求失败 (${response.status})`)
+    throw new DeviceApiError(text || `请求失败 (${response.status})`, response.status, path)
   }
 
   if (!response.ok) {
@@ -106,7 +132,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       typeof data === 'object' && data && 'error' in data
         ? String((data as { error: unknown }).error)
         : `请求失败 (${response.status})`
-    throw new Error(message)
+    throw new DeviceApiError(message, response.status, path)
   }
   return data as T
 }

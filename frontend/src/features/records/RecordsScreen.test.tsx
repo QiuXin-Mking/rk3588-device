@@ -1,7 +1,7 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { FALLBACK_RECORD, FALLBACK_STATUS, type ScreenCommonProps } from '../../app/model'
-import type { Recording } from '../../services/deviceApi'
+import { api, type Recording } from '../../services/deviceApi'
 import { RecordsScreen } from './RecordsScreen'
 
 const recording = (name: string, size: number): Recording => ({
@@ -63,5 +63,20 @@ describe('RecordsScreen', () => {
     render(<RecordsScreen {...props([recording('one', size)])} />)
 
     expect(screen.getByText(expected)).toBeInTheDocument()
+  })
+
+  it('confirms and executes deletion from record details', async () => {
+    const deleteFile = vi.spyOn(api, 'deleteFile').mockResolvedValue({ ok: true })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const screenProps = props([recording('session_delete', 1024)])
+    render(<RecordsScreen {...screenProps} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /session_delete/ }))
+    fireEvent.click(screen.getByRole('button', { name: '删除' }))
+
+    await waitFor(() => expect(deleteFile).toHaveBeenCalledWith('session_delete'))
+    expect(screenProps.refreshFiles).toHaveBeenCalled()
+    expect(screen.queryByRole('dialog', { name: '记录详情' })).not.toBeInTheDocument()
+    vi.restoreAllMocks()
   })
 })
