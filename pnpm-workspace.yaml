@@ -1,2 +1,6 @@
+packages:
+  - management/frontend
+
 allowBuilds:
   esbuild: true
+  protobufjs: true

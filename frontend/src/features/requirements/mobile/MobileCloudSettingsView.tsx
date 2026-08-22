@@ -1,5 +1,4 @@
 import { Check, ChevronRight, Cloud, HardDrive, KeyRound, ServerCog, ShieldCheck } from 'lucide-react'
-import type { Notify } from '../../../app/model'
 import { cn } from '../../../shared/lib/cn'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '../../../shared/ui/DevicePrimitives'
@@ -13,20 +12,34 @@ export function MobileCloudSettingsView({
   provider,
   testing,
   tested,
+  endpoint,
+  bucket,
+  region,
+  saving,
   setMode,
   setProvider,
+  setEndpoint,
+  setBucket,
+  setRegion,
   test,
-  notify,
+  save,
 }: {
   back: () => void
   mode: 'local' | 'cloud'
   provider: (typeof providers)[number]
   testing: boolean
   tested: boolean
+  endpoint: string
+  bucket: string
+  region: string
+  saving: boolean
   setMode: (mode: 'local' | 'cloud') => void
   setProvider: (provider: (typeof providers)[number]) => void
+  setEndpoint: (value: string) => void
+  setBucket: (value: string) => void
+  setRegion: (value: string) => void
   test: () => void
-  notify: Notify
+  save: () => void
 }) {
   const inputClass = 'min-h-11 w-full rounded-[.8rem] border border-border bg-secondary px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/60'
   const labelClass = 'grid gap-1.5 text-xs text-muted-foreground'
@@ -40,8 +53,8 @@ export function MobileCloudSettingsView({
     </section>
     {mode === 'local' ? <Card className="grid gap-3 p-4 shadow-none lg:col-span-2">{formTitle(<HardDrive />, '本地录制目录', '采集文件将首先写入本机')}<label className={labelClass}><span>录制目录</span><input className={inputClass} defaultValue="/data/recordings" /></label><label className={labelClass}><span>空间预警阈值</span><input className={inputClass} defaultValue="15%" /></label><div className="flex gap-2 rounded-[.8rem] bg-secondary p-3 text-xs leading-5 text-muted-foreground"><ShieldCheck className="size-4 shrink-0" />本地存储不依赖公网，空间不足时将提前提醒。</div></Card> : <>
       <Card className="grid gap-3 p-4 shadow-none lg:self-start"><span className="text-xs text-muted-foreground">选择云服务商</span><div className="grid grid-cols-2 gap-2">{providers.map(item => <button key={item} className={cn('relative grid min-h-20 justify-items-start gap-2 rounded-lg border border-border bg-secondary p-3 text-left text-sm text-foreground', provider === item && 'border-primary text-primary')} onClick={() => setProvider(item)}><ServerCog className="size-5" /><strong>{item}</strong>{provider === item && <Check className="absolute right-2.5 top-2.5 size-4" />}</button>)}</div></Card>
-      <Card className="grid gap-3 p-4 shadow-none">{formTitle(<KeyRound />, `${provider} 凭证`, '密钥不会在页面中明文回显')}<label className={labelClass}><span>Endpoint</span><input className={inputClass} placeholder="https://endpoint.example.com" /></label><label className={labelClass}><span>Bucket</span><input className={inputClass} placeholder="sensorhub-dataset" /></label><label className={labelClass}><span>Access Key</span><input className={inputClass} autoComplete="off" placeholder="请输入 Access Key" /></label><label className={labelClass}><span>Secret Key</span><input className={inputClass} type="password" autoComplete="new-password" placeholder="请输入 Secret Key" /></label><label className={labelClass}><span>目录前缀</span><input className={inputClass} placeholder="project/device-sn/" /></label>{tested && <div className="flex gap-2 rounded-[.8rem] bg-primary/8 p-3 text-xs leading-5 text-primary"><Check className="size-4 shrink-0" />字段格式检查通过，等待后端连通性验证。</div>}</Card>
-      <Card className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-2.5 right-2.5 z-30 grid grid-cols-[1fr_1.4fr] gap-2 rounded-[1.1rem] bg-card/95 p-2 backdrop-blur-xl"><Button onClick={test}>{testing ? '检查中…' : '测试配置'}</Button><Button variant="default" onClick={() => notify(`${provider} 配置已保存在当前页面，待后端接入`)}>保存配置<ChevronRight className="size-4" /></Button></Card>
+      <Card className="grid gap-3 p-4 shadow-none">{formTitle(<KeyRound />, `${provider} 凭证`, '连接参数同步到管理后台')}<label className={labelClass}><span>Endpoint</span><input className={inputClass} value={endpoint} onChange={event => setEndpoint(event.target.value)} placeholder="https://endpoint.example.com" /></label><label className={labelClass}><span>Bucket</span><input className={inputClass} value={bucket} onChange={event => setBucket(event.target.value)} placeholder="sensorhub-dataset" /></label><label className={labelClass}><span>区域 Region</span><input className={inputClass} value={region} onChange={event => setRegion(event.target.value)} placeholder="cn-east-3" /></label><label className={labelClass}><span>Access Key</span><input className={inputClass} autoComplete="off" placeholder="接口启用后填写" disabled /></label><label className={labelClass}><span>Secret Key</span><input className={inputClass} type="password" autoComplete="new-password" placeholder="接口启用后填写" disabled /></label>{tested && <div className="flex gap-2 rounded-[.8rem] bg-primary/8 p-3 text-xs leading-5 text-primary"><Check className="size-4 shrink-0" />字段格式检查通过；真实连通性取决于云服务接口。</div>}</Card>
+      <Card className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-2.5 right-2.5 z-30 grid grid-cols-[1fr_1.4fr] gap-2 rounded-[1.1rem] bg-card/95 p-2 backdrop-blur-xl"><Button onClick={test}>{testing ? '检查中…' : '测试配置'}</Button><Button variant="default" disabled={saving || !endpoint || !bucket} onClick={save}>{saving ? '保存中…' : '保存配置'}<ChevronRight className="size-4" /></Button></Card>
     </>}
   </div>
 }

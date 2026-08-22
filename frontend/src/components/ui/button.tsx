@@ -35,8 +35,8 @@ const buttonVariants = cva(
         "device-compact": "h-[72px] gap-3 rounded-xl px-5 text-[length:var(--device-text-xs)] [&_svg:not([class*='size-'])]:size-7",
         device: "h-[88px] gap-3.5 rounded-xl px-7 text-[length:var(--device-text-sm)] [&_svg:not([class*='size-'])]:size-7",
         "device-primary": "h-[104px] gap-4 rounded-xl px-8 text-[length:var(--device-text-md)] [&_svg:not([class*='size-'])]:size-8",
-        chrome: "h-[88px] w-[106px] flex-col gap-0.5 rounded-xl px-2 text-[length:var(--device-text-xs)] [&_svg:not([class*='size-'])]:size-8",
-        tab: "h-full w-full flex-col gap-2 rounded-xl text-[length:var(--device-text-sm)] [&_svg:not([class*='size-'])]:size-[42px]",
+        chrome: "h-[72px] w-[92px] rounded-xl px-3 text-[length:var(--device-text-xs)]",
+        tab: "h-[72px] w-full rounded-xl text-[length:var(--device-text-sm)]",
         "icon-touch": "size-11 rounded-lg",
       },
     },
@@ -56,6 +56,7 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
+      data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

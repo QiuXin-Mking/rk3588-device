@@ -1,4 +1,3 @@
-import type { SelectableProduct } from '../../app/product'
 import type { RecordStatus } from '../../services/deviceApi'
 
 export type ProductDeviceId =
@@ -20,19 +19,4 @@ export type ProductDeviceStatus = {
 
 export function cameraIsOnline(record: RecordStatus, keys: string[]) {
   return keys.some((key) => Boolean(record.cameras?.[key]))
-}
-
-export function getSideCameraChannels(
-  product: SelectableProduct,
-  states: { leftHand: boolean; rightHand: boolean; leftWrist: boolean; rightWrist: boolean },
-) {
-  return product === 'Mango'
-    ? [
-        { label: '左腕部单目', online: states.leftWrist },
-        { label: '右腕部单目', online: states.rightWrist },
-      ]
-    : [
-        { label: '左手双目', online: states.leftHand },
-        { label: '右手双目', online: states.rightHand },
-      ]
 }

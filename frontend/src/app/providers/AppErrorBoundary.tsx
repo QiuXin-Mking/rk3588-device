@@ -12,7 +12,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('SensorHub UI error', error, info.componentStack)
+    console.error('Ego capture UI error', error, info.componentStack)
   }
 
   render() {

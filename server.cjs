@@ -36,6 +36,7 @@ const { exec, execFile, spawn } = require('child_process');
 const url   = require('url');
 const net   = require('net');
 const { createPreviewController } = require('./preview-control.cjs');
+const { deleteRecordingDirectory } = require('./recording-files.cjs');
 
 const PORT       = parseInt(process.env.PORT || '8080', 10);
 const STATIC_DIR = path.join(__dirname, 'static');
@@ -45,6 +46,7 @@ const WIRED_REC_SVC = 'worldintel-wired-recorder';
 const CAL_PORT   = parseInt(process.env.CAL_PORT || '8888', 10);
 const CAL_URL    = `http://localhost:${CAL_PORT}`;
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
+const MANAGEMENT_API_TARGET = process.env.MANAGEMENT_API_TARGET || 'http://127.0.0.1:8010';
 // Battery fuel-gauge chip (and whether it exposes `status` itself or needs a
 // separate charger node for that) differs by board revision:
 //   RK3588: cw2017-battery/{capacity,status,voltage_now}  (status on the same node)
@@ -723,13 +725,18 @@ async function apiFiles(req, res) {
 
 // TODO(v0.2): DELETE /api/files/:name — 删除指定录制
 async function apiFilesDelete(req, res, name) {
-  if (!name || name.includes('..') || name.includes('/')) {
-    return json(res, { ok: false, error: 'invalid name' }, 400);
+  const body = await readBody(req);
+  if (body.confirmation !== name) {
+    return json(res, { ok: false, error: 'delete confirmation mismatch' }, 403);
   }
-  const baseDir = (await captureActive()) ? CAPTURE_DATA_DIR : RECORD_DIR;
-  const fp = path.join(baseDir, name);
-  const out = await sh(`rm -rf ${JSON.stringify(fp)} 2>/dev/null && echo ok`);
-  json(res, { ok: out.trim() === 'ok' });
+  try {
+    const baseDir = (await captureActive()) ? CAPTURE_DATA_DIR : RECORD_DIR;
+    deleteRecordingDirectory(baseDir, name);
+    return json(res, { ok: true });
+  } catch (error) {
+    const status = error && error.code === 'not_found' ? 404 : 400;
+    return json(res, { ok: false, error: error instanceof Error ? error.message : 'delete failed' }, status);
+  }
 }
 
 // ── On-demand decode (post-process) ────────────────────────────────────────
@@ -1562,6 +1569,29 @@ async function apiCalibrator(req, res) {
 // Proxy:         ANY  /api/glove/cal/*
 // ────────────────────────────────────────────────────────────────────────────────
 
+function proxyManagementApi(req, res) {
+  let target;
+  try {
+    target = new URL(MANAGEMENT_API_TARGET);
+  } catch {
+    return json(res, { error: 'invalid management api target' }, 503);
+  }
+  const upstreamPath = (req.url || '/').replace(/^\/management-api/, '/api');
+  const upstream = http.request({
+    protocol: target.protocol,
+    hostname: target.hostname,
+    port: target.port || 80,
+    method: req.method,
+    path: upstreamPath,
+    headers: { ...req.headers, host: target.host },
+  }, upstreamRes => {
+    res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
+    upstreamRes.pipe(res);
+  });
+  upstream.on('error', () => json(res, { error: 'management api unavailable' }, 503));
+  req.pipe(upstream);
+}
+
 const server = http.createServer(async (req, res) => {
   const parsed  = url.parse(req.url || '/');
   const pathname = parsed.pathname || '/';
@@ -1571,6 +1601,7 @@ const server = http.createServer(async (req, res) => {
   if (method === 'OPTIONS') { res.writeHead(204); return res.end(); }
 
   // API routes
+  if (pathname.startsWith('/management-api/')) return proxyManagementApi(req, res);
   if (pathname === '/api/status'              && method === 'GET')    return apiStatus(req, res);
   if (pathname === '/api/wifi/scan'           && method === 'GET')    return apiWifiScan(req, res);
   if (pathname === '/api/wifi/connect'        && method === 'POST')   return apiWifiConnect(req, res);

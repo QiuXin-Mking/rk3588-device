@@ -7,13 +7,13 @@ import {
 	Wrench,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useUiMode } from "../../app/uiModeContext";
+import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import type { Navigate, Notify } from "../../app/model";
+import { useUiMode } from "../../app/uiModeContext";
 import { api, type DeviceStatus } from "../../services/deviceApi";
 import { useI18n } from "../../shared/i18n/I18n";
 import { Brand, PageHeader } from "../../shared/ui/DevicePrimitives";
-import { Card } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 
 export function SettingsScreen({
 	status,
@@ -58,7 +58,12 @@ export function SettingsScreen({
 						<strong>录制后自动处理</strong>
 						<small>停止录制后自动解码 IMU 数据</small>
 					</span>
-					<Switch size="device" checked={postCapture} onCheckedChange={changePostCapture} aria-label="录制后自动处理" />
+					<Switch
+						size="device"
+						checked={postCapture}
+						onCheckedChange={changePostCapture}
+						aria-label="录制后自动处理"
+					/>
 				</div>
 				<button onClick={toggleLocale}>
 					<span className="grid size-[76px] place-items-center rounded-[20px] bg-violet-500/10 text-violet-500 [&>svg]:size-[38px]">
@@ -117,25 +122,67 @@ export function AboutScreen({ back }: { back: () => void }) {
 				<PageHeader title="关于" back={back} />
 				<Card className="overflow-hidden p-5">
 					<div className="flex items-center gap-3 border-b border-border pb-5">
-						<span className="grid size-14 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm"><Activity className="size-7" /></span>
-						<div><h2 className="text-xl font-extrabold">SensorHub</h2><p className="mt-1 text-xs text-muted-foreground">设备采集终端</p></div>
+						<span className="grid size-14 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+							<Activity className="size-7" />
+						</span>
+						<div>
+							<h2 className="text-xl font-extrabold">Ego 采集终端</h2>
+							<p className="mt-1 text-xs text-muted-foreground">设备采集终端</p>
+						</div>
 					</div>
-					<p className="py-5 text-sm leading-6 text-muted-foreground">面向智能穿戴、双目相机与多传感器数据采集的一体化设备界面。</p>
+					<p className="py-5 text-sm leading-6 text-muted-foreground">
+						面向智能穿戴、双目相机与多传感器数据采集的一体化设备界面。
+					</p>
 					<dl className="grid grid-cols-2 gap-2.5">
-						{[["界面版本", "React 终端版"], ["目标平台", "Debian 11 · ARM64"], ["物理屏幕", "5.5 英寸"], ["显示模式", "设备端 / H5"]].map(([label, value]) => <div className="grid min-w-0 gap-1 rounded-lg bg-secondary p-3" key={label}><dt className="text-[11px] text-muted-foreground">{label}</dt><dd className="break-words text-sm font-semibold leading-5">{value}</dd></div>)}
+						{[
+							["界面版本", "React 终端版"],
+							["目标平台", "Debian 11 · ARM64"],
+							["物理屏幕", "5.5 英寸"],
+							["显示模式", "设备端 / H5"],
+						].map(([label, value]) => (
+							<div
+								className="grid min-w-0 gap-1 rounded-lg bg-secondary p-3"
+								key={label}
+							>
+								<dt className="text-[11px] text-muted-foreground">{label}</dt>
+								<dd className="break-words text-sm font-semibold leading-5">
+									{value}
+								</dd>
+							</div>
+						))}
 					</dl>
 				</Card>
-				<Card className="p-5 shadow-none"><h3 className="text-lg font-bold">版本记录</h3><div className="mt-4 grid gap-4"><div><strong className="text-sm text-primary">v1.1.0</strong><p className="mt-1 text-sm leading-6 text-muted-foreground">移动端适配、Safe Area、云存储与任务工作流界面</p></div><div><strong className="text-sm text-primary">v1.0.0</strong><p className="mt-1 text-sm leading-6 text-muted-foreground">RK3588 设备采集终端初始版本</p></div></div></Card>
+				<Card className="p-5 shadow-none">
+					<h3 className="text-lg font-bold">版本记录</h3>
+					<div className="mt-4 grid gap-4">
+						<div>
+							<strong className="text-sm text-primary">v1.1.0</strong>
+							<p className="mt-1 text-sm leading-6 text-muted-foreground">
+								移动端适配、Safe Area、云存储与任务工作流界面
+							</p>
+						</div>
+						<div>
+							<strong className="text-sm text-primary">v1.0.0</strong>
+							<p className="mt-1 text-sm leading-6 text-muted-foreground">
+								RK3588 设备采集终端初始版本
+							</p>
+						</div>
+					</div>
+				</Card>
 			</div>
 		);
 	}
 	return (
 		<div className="page detail-page">
-			<PageHeader title="关于" subtitle="SensorHub 设备采集终端" back={back} />
-			<Card className="grid min-h-0 flex-1 grid-cols-[320px_1fr] content-center gap-x-12 gap-y-6 p-10 [&>.brand]:col-span-2">
-				<Brand />
-				<p className="col-span-2 m-0 text-[length:var(--device-text-sm)] text-muted-foreground">面向智能穿戴、双目相机与多传感器数据采集的一体化设备界面。</p>
-				<dl className="grid grid-cols-2 gap-3 [&>div]:rounded-xl [&>div]:bg-secondary [&>div]:p-5 [&_dd]:mt-2 [&_dd]:text-[length:var(--device-text-md)] [&_dd]:font-bold [&_dt]:text-[length:var(--device-text-xs)] [&_dt]:text-muted-foreground">
+			<PageHeader title="关于" subtitle="Ego 设备采集终端" back={back} />
+			<Card className="min-h-0 flex-1 overflow-auto p-8">
+				<div className="flex items-center justify-between gap-8 border-b border-border pb-7">
+					<Brand />
+					<p className="m-0 max-w-[980px] text-right text-[length:var(--device-text-xs)] leading-relaxed text-muted-foreground">
+						面向智能穿戴、双目相机与多传感器数据采集的一体化设备界面
+					</p>
+				</div>
+				<dl className="mt-7 grid grid-cols-4 gap-4 [&>div]:min-w-0 [&>div]:rounded-xl [&>div]:border [&>div]:border-border [&>div]:bg-secondary/45 [&>div]:px-5 [&>div]:py-4 [&_dd]:mt-2 [&_dd]:whitespace-nowrap [&_dd]:text-[length:var(--device-text-sm)] [&_dd]:font-bold [&_dt]:text-[length:var(--device-text-xs)] [&_dt]:text-muted-foreground">
 					<div>
 						<dt>界面版本</dt>
 						<dd>React 终端版</dd>
@@ -153,16 +200,29 @@ export function AboutScreen({ back }: { back: () => void }) {
 						<dd>设备横屏 / H5 响应式</dd>
 					</div>
 				</dl>
-				<div className="rounded-xl border border-violet-500/25 bg-violet-500/5 p-6">
-					<h3 className="text-[length:var(--device-text-lg)] font-bold">版本记录</h3>
-					<p className="mt-4 text-[length:var(--device-text-sm)] text-muted-foreground">
-						<strong>v1.1.0</strong> 移动端适配、Safe
-						Area、云存储与任务工作流界面
-					</p>
-					<p className="mt-3 text-[length:var(--device-text-sm)] text-muted-foreground">
-						<strong>v1.0.0</strong> RK3588 设备采集终端初始版本
-					</p>
-				</div>
+				<section className="mt-7">
+					<h3 className="text-[length:var(--device-text-md)] font-bold">
+						版本记录
+					</h3>
+					<div className="mt-4 grid grid-cols-2 gap-4">
+						<div className="rounded-xl border border-violet-500/25 bg-violet-500/5 p-5">
+							<strong className="text-[length:var(--device-text-sm)] text-violet-400">
+								v1.1.0
+							</strong>
+							<p className="mt-2 text-[length:var(--device-text-xs)] leading-relaxed text-muted-foreground">
+								移动端适配、Safe Area、云存储与任务工作流界面
+							</p>
+						</div>
+						<div className="rounded-xl border border-border bg-secondary/30 p-5">
+							<strong className="text-[length:var(--device-text-sm)]">
+								v1.0.0
+							</strong>
+							<p className="mt-2 text-[length:var(--device-text-xs)] leading-relaxed text-muted-foreground">
+								RK3588 设备采集终端初始版本
+							</p>
+						</div>
+					</div>
+				</section>
 			</Card>
 		</div>
 	);

@@ -9,41 +9,18 @@ Chromium (kiosk :0)  ←→  Node.js server.cjs (:8080)  ←→  static/ (React 
      触摸屏                     后端 API + 静态服务                 前端页面
 ```
 
-## 界面截图
-
-**首页 · 产品套件**
-
-![首页 · 产品套件](docs/images/home-product-kit.png)
-
-**数据页 · 实时采集**
-
-![数据页 · 实时采集](docs/images/data-realtime.png)
-
-**记录页**
-
-![记录页](docs/images/records.png)
-
 ## 主导航
 
 底部四个一级入口：
 
 | Tab | 文案 | 说明 |
 |-----|------|------|
-| Home | 主页 | 产品选择 + 设备/套件列表（Banana / Mango） |
-| Data | 数据 | 实时预览、采集、相机、夹爪 |
-| Records | 记录 | 录制文件浏览 / 预览 / 解码 / 传输 / 删除 |
-| Profile | 我的 | WiFi、蓝牙、设备管理、设置、关于 |
+| Tasks | 任务 | 任务广场、筛选、SOP、任务承接与可选 GPS |
+| Capture | 采集 | 三套设备状态、画面预览、标零、开始/停止和日志 |
+| Records | 数据 | 项目/任务/子任务、套件、数据 ID、地点、时间、验收与数据状态 |
+| Profile | 我的 | Mango 设备状态与预览摘要 |
 
-产品套件（Banana）当前设备列表：
-
-| 设备 | 代号 | 状态 |
-|------|------|------|
-| 左指尖夹爪 | `UMI_Fingers_L` | 可用（MKV · Y8 · IMU） |
-| 右指尖夹爪 | `UMI_Fingers_R` | 可用（MKV · Y8 · IMU） |
-| 头部 Ego | `Ego_H` | 可用（MKV · Y8 · IMU） |
-| 左板机夹爪 | `UMI_Grippers_L` | 暂未开发 |
-| 右板机夹爪 | `UMI_Grippers_R` | 暂未开发 |
-| 手套 | `Suits` | 暂未开发 |
+设备端和移动端都严格保留以上四个一级页面及相同功能归属。设备端按 1920×1080 的 4–5 英寸触摸屏组织大热区；移动端只在同一页面内重排为手机布局，不合并或拆分一级页面。
 
 ## 前端结构
 
@@ -51,11 +28,10 @@ Chromium (kiosk :0)  ←→  Node.js server.cjs (:8080)  ←→  static/ (React 
 
 | 目录 | 职责 |
 |------|------|
-| `app/` | 应用控制器、`DeviceShell` 外壳、导航模型、产品选择 |
-| `features/home/` | 首页 + 产品套件 |
-| `features/data/` | 实时采集、相机、夹爪、任务认领 |
+| `app/` | 应用控制器、双端外壳和四页导航模型 |
+| `features/data/` | 任务与采集页面 |
 | `features/records/` | 录制记录浏览 |
-| `features/profile/` | WiFi、蓝牙、设备管理、设置、关于 |
+| `features/profile/` | 我的页及管理员保护的设备、连接、设置页面 |
 | `features/expansion/` | 扩展（市场、精选、包下载、账号） |
 | `services/deviceApi.ts` | 设备 HTTP API 边界 |
 | `shared/` | 中英文 i18n、触屏 UI 原语（`TouchChoice`、`TouchKeyboard`） |

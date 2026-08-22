@@ -58,6 +58,7 @@ export type Recording = {
   transferring: boolean
   transferred: boolean
   transferPct: number
+  remoteOnly?: boolean
 }
 
 export type FilesResponse = {
@@ -146,7 +147,7 @@ export const api = {
   stopLive: () => request<{ ok: boolean; error?: string }>('POST', '/api/camera/live/stop'),
   files: () => request<FilesResponse>('GET', '/api/files'),
   deleteFile: (name: string) =>
-    request<{ ok: boolean }>('DELETE', `/api/files/${encodeURIComponent(name)}`),
+    request<{ ok: boolean }>('DELETE', `/api/files/${encodeURIComponent(name)}`, { confirmation: name }),
   decodeFile: (name: string) =>
     request<{ ok: boolean; error?: string }>(
       'POST',

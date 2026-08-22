@@ -16,21 +16,21 @@
   --surface-3: var(--muted);
 
   /* 5.5-inch / 1920×1080 terminal metrics. */
-  --chrome-top: 108px;
-  --chrome-bottom: 144px;
+  --chrome-top: 96px;
+  --chrome-bottom: 92px;
   --touch-min: 112px;
-  --touch-primary: 128px;
-  --device-radius: 24px;
-  --gap: 20px;
+  --touch-primary: 132px;
+  --device-radius: 26px;
+  --gap: 22px;
 
   /* Device UI is viewed at arm's length or farther, so its type scale is
      intentionally larger than the handheld H5 scale. */
-  --device-text-xs: 24px;
-  --device-text-sm: 28px;
-  --device-text-md: 30px;
-  --device-text-lg: 36px;
-  --device-text-xl: 46px;
-  --device-text-data: 64px;
+  --device-text-xs: 30px;
+  --device-text-sm: 36px;
+  --device-text-md: 40px;
+  --device-text-lg: 48px;
+  --device-text-xl: 58px;
+  --device-text-data: 76px;
 }
 
 html[data-ui-mode="mobile"] {

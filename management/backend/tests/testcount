@@ -1,0 +1,24 @@
+tests
+backend/tests/conftest.py  (对应：无，pytest 全局配置)
+backend/tests/api/routes/test_login.py  (对应：app/api/routes/login.py)
+backend/tests/api/routes/test_users.py  (对应：app/api/routes/users.py)
+backend/tests/api/routes/test_workspace_isolation.py  (对应：全局依赖 app/core/workspace_context.py，无特定单一实现)
+backend/tests/dao/test_user.py  (对应：app/dao/user.py)
+backend/tests/utils/user.py  (对应：无，这是供其他测试调用的虚拟数据工厂)
+backend/tests/utils/utils.py  (对应：无，也是随机字符串等辅助工具)
+
+app
+backend/app/api/deps.py  (对应：无，路由依赖注入)
+backend/app/api/main.py  (对应：无，路由注册总线)
+backend/app/api/routes/business_lines.py  (对应：❌ 缺失 tests/api/routes/test_business_lines.py)
+backend/app/api/routes/login.py  (对应：tests/api/routes/test_login.py)
+backend/app/api/routes/roles.py  (对应：❌ 缺失 tests/api/routes/test_roles.py)
+backend/app/api/routes/users.py  (对应：tests/api/routes/test_users.py)
+backend/app/api/routes/utils.py  (对应：无，仅返回健康态探针，免测)
+backend/app/api/routes/workspace_members.py  (对应：❌ 缺失 tests/api/routes/test_workspace_members.py)
+backend/app/api/routes/workspaces.py  (对应：❌ 缺失 tests/api/routes/test_workspaces.py，isolation脚本仅顺带测了很小一部分)
+backend/app/dao/user.py  (对应：tests/dao/test_user.py)
+【严重缺失】app/dao/workspace.py等其他DAO实现文件全无，导致了路由层只能越权写 session.exec。
+backend/app/main.py  (对应：无，FastAPI 实例创建入口)
+backend/app/tests_pre_start.py  (对应：无，测试前置启动脚本)
+backend/app/utils.py  (对应：无，目前留有验证重置密码token的方法，邮件发送刚删光)

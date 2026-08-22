@@ -3,16 +3,17 @@ import { useUiMode } from './uiModeContext'
 import { DeviceShell } from '../platforms/device/DeviceShell'
 import { MobileShell } from '../platforms/mobile/MobileShell'
 import type { DeviceStatus } from '../services/deviceApi'
-import type { MainTab } from './navigation'
+import type { MainTab, View } from './navigation'
 
 export type AppShellProps = {
   active: MainTab
   online: boolean
   status: DeviceStatus
   toast: string
+  userName: string
   children: ReactNode
   onSelect: (tab: MainTab) => void
-  productName: string
+  onAdminSelect: (view: Extract<View, 'settings' | 'device-list'>) => void
 }
 
 export function AppShell(props: AppShellProps) {

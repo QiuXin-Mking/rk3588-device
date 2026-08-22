@@ -15,7 +15,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "lint": "biome lint frontend/src vite.config.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
-    "test:server": "node --test tests/*.test.cjs"
+    "test:server": "node --test tests/*.test.cjs",
+    "admin:dev": "pnpm --filter @ego/management-web dev",
+    "admin:build": "pnpm --filter @ego/management-web build",
+    "admin:test": "pnpm --filter @ego/management-web test"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

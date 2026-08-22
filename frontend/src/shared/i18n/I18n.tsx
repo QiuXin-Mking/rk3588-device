@@ -13,6 +13,7 @@ import {
 export type Locale = 'zh' | 'en'
 
 const EN: Record<string, string> = {
+  '预览': 'Preview',
   '主页': 'Home',
   '数据': 'Data',
   '记录': 'Records',
@@ -252,7 +253,7 @@ const EN: Record<string, string> = {
   '展示位': 'Preview',
   '商城下单、价格和库存接口待接入': 'Ordering, pricing and inventory APIs pending',
   '采集指南与推荐任务': 'Capture guides and recommended tasks',
-  '第一次使用 SensorHub': 'Getting started with SensorHub',
+  '第一次使用 Ego 采集终端': 'Getting started with Ego Capture Terminal',
   '了解设备检查、任务领取、相机预览和数据录制的完整流程。': 'Learn the complete device check, task, preview and recording workflow.',
   '播放内容': 'Play',
   '采集前检查': 'Pre-capture check',

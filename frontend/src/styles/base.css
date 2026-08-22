@@ -91,6 +91,124 @@ html[data-ui-mode="mobile"] .page {
   overflow: visible;
 }
 
+/*
+ * The device viewport is 1920×1080 but only 4–5 inches wide.  Its CSS pixel
+ * density is therefore much higher than a desktop monitor.  Do not let
+ * shadcn's desktop-sized 12–16px defaults leak into the touch terminal.
+ */
+html[data-ui-mode="device"] {
+  font-size: 22px;
+}
+
+html[data-ui-mode="device"] [data-slot="card"] {
+  font-size: 28px !important;
+}
+
+html[data-ui-mode="device"] [data-slot="card-title"] {
+  font-size: 34px !important;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+html[data-ui-mode="device"] [data-slot="field-label"] {
+  font-size: 27px !important;
+  line-height: 1.35;
+}
+
+html[data-ui-mode="device"] [data-slot="card-description"] {
+  display: none !important;
+}
+
+html[data-ui-mode="device"] [data-slot="input"],
+html[data-ui-mode="device"] [data-slot="native-select"],
+html[data-ui-mode="device"] [data-slot="textarea"] {
+  min-height: 72px !important;
+  padding-inline: 18px;
+  font-size: 28px !important;
+  line-height: 1.25;
+}
+
+html[data-ui-mode="device"] [data-slot="native-select-icon"] {
+  width: 30px;
+  height: 30px;
+}
+
+html[data-ui-mode="device"] [data-slot="native-select"][data-size="device"] {
+  min-height: 88px !important;
+  padding-left: 96px !important;
+  padding-right: 68px !important;
+  font-size: var(--device-text-sm) !important;
+  font-weight: 500;
+}
+
+html[data-ui-mode="device"]
+  [data-slot="native-select-wrapper"][data-size="device"]
+  [data-slot="native-select-icon"] {
+  right: 28px;
+}
+
+html[data-ui-mode="device"] [data-slot="button"] {
+  min-height: 68px !important;
+}
+
+html[data-ui-mode="device"] [data-slot="button"][data-size="default"],
+html[data-ui-mode="device"] [data-slot="button"][data-size="xs"],
+html[data-ui-mode="device"] [data-slot="button"][data-size="sm"],
+html[data-ui-mode="device"] [data-slot="button"][data-size="lg"],
+html[data-ui-mode="device"] [data-slot="button"][data-size="touch"] {
+  font-size: 28px !important;
+}
+
+html[data-ui-mode="device"] [data-slot="button"] svg:not([class*="size-"]) {
+  width: 30px;
+  height: 30px;
+}
+
+html[data-ui-mode="device"] [data-slot="badge"] {
+  min-height: 42px !important;
+  padding-inline: 14px;
+  font-size: 24px !important;
+}
+
+html[data-ui-mode="device"] code,
+html[data-ui-mode="device"] small {
+  font-size: 24px !important;
+  line-height: 1.35;
+}
+
+html[data-ui-mode="device"] input[type="checkbox"] {
+  width: 32px;
+  height: 32px;
+}
+
+html[data-ui-mode="device"] [data-sonner-toaster] {
+  --width: 680px !important;
+}
+
+html[data-ui-mode="device"] .cn-toast {
+  min-height: 104px !important;
+  padding: 24px 30px !important;
+  gap: 18px !important;
+  border-radius: 20px !important;
+  font-size: var(--device-text-sm) !important;
+  line-height: 1.35 !important;
+}
+
+html[data-ui-mode="device"] .cn-toast [data-title] {
+  font-size: var(--device-text-sm) !important;
+  line-height: 1.35 !important;
+}
+
+html[data-ui-mode="device"] .cn-toast svg {
+  width: 36px;
+  height: 36px;
+}
+
+html[data-ui-mode="device"] .local-scroll::-webkit-scrollbar {
+  width: 26px;
+  height: 26px;
+}
+
 .eyebrow {
   color: var(--primary);
   font-size: var(--device-text-xs);
